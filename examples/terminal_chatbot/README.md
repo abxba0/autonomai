@@ -141,9 +141,9 @@ You: /history
 You: /feedback
 
 💭 Manual Feedback Submission
-Enter your feedback (press Enter twice to finish):
+Enter your feedback (type 'END' on a new line to finish):
 Please provide more concise answers
-
+END
 
 Processing feedback...
 ✅ Feedback processed and instructions updated!
