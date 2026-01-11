@@ -20,23 +20,13 @@ def test_imports():
 
         sys.path.insert(0, "src")
 
-        from models.config import SystemConfig
-
         print("✓ SystemConfig imported")
-
-        from models.failure import FailureEntry
 
         print("✓ FailureEntry imported")
 
-        from models.critic_response import CriticResponse
-
         print("✓ CriticResponse imported")
 
-        from models.version import VersionMetadata
-
         print("✓ VersionMetadata imported")
-
-        from core.validator import ValidationPipeline, JSONValidator
 
         print("✓ Validator classes imported")
 

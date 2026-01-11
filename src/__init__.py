@@ -182,7 +182,7 @@ class SelfOptimizingSystem:
             },
             "versions": {
                 "total": len(versions),
-                "latest": versions[-1].version_id if versions else None,
+                "latest": versions[-1]["version_id"] if versions else None,
             },
             "validation": {
                 "validators_count": len(self.validation_pipeline.validators),

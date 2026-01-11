@@ -30,18 +30,20 @@ def test_mock_system():
         test_query = "What is 2+2?"
         print(f"\nExecuting query: {test_query}")
         result = system.execute(test_query)
-        print(f"✓ Execution result: {result[:100]}...")
+        print("✓ Execution completed")
+        print(f"  Output: {result['output'][:100]}...")
+        print(f"  Validation passed: {result['validation_passed']}")
 
         # Test validation
         print("\nTesting validation...")
-        validation_result = system.validate_output(result)
+        validation_result = system.validate_output(result["output"])
         print(f"✓ Validation passed: {validation_result}")
 
         # Test feedback loop
         print("\nTesting feedback loop...")
         feedback_result = system.process_feedback(
             user_query=test_query,
-            model_output=result,
+            model_output=result["output"],
             feedback_type="auto_validation",
             feedback_details="Test feedback",
         )

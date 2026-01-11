@@ -3,7 +3,7 @@ Authentication and authorization system for the Self-Optimizing Instruction Libr
 """
 
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict
 from enum import Enum
 import hashlib
 import secrets

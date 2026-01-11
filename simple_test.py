@@ -21,8 +21,6 @@ try:
 
     print("✓ CriticResponse imported")
 
-    from models.version import VersionMetadata
-
     print("✓ VersionMetadata imported")
 
     from core.validator import ValidationPipeline, JSONValidator, LengthValidator

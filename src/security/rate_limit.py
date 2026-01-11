@@ -3,9 +3,8 @@ Rate limiting and API key management
 """
 
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple
-from collections import defaultdict
 import hashlib
 import secrets
 from dataclasses import dataclass, field

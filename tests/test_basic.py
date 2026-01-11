@@ -119,7 +119,6 @@ def test_validators():
 
 def test_system_in_temp_dir():
     """Test system functionality in temporary directory"""
-    import tempfile
     from models.config import SystemConfig
     from src import SelfOptimizingSystem
 

@@ -5,7 +5,7 @@ Audit logging and security monitoring
 import json
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any
 from enum import Enum
 from dataclasses import dataclass, field, asdict
 from pathlib import Path

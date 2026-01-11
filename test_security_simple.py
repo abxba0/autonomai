@@ -10,23 +10,19 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src", "security"))
 
 # Import security modules directly
 from auth import (
-    User,
     Role,
-    Permission,
     authenticate_user,
     create_access_token,
     create_refresh_token,
     verify_token,
-    get_user,
 )
 
-from validation import sanitize_input, validate_input, SecurityValidator
+from validation import sanitize_input, validate_input
 
 from rate_limit import RateLimiter, APIKeyManager, RateLimitConfig, RateLimitStrategy
 
 from audit import (
     AuditLogger,
-    SecurityMonitor,
     AuditEvent,
     AuditEventType,
     AuditSeverity,
@@ -186,7 +182,6 @@ def test_audit_logging():
 
     # Log test event
     import uuid
-    from datetime import datetime
 
     test_event = AuditEvent(
         event_id=str(uuid.uuid4()),
