@@ -10,7 +10,7 @@ import os
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
-from src import SelfOptimizingSystem, SystemConfig, JSONValidator, LengthValidator
+from src import SelfOptimizingSystem, SystemConfig, LengthValidator
 from dotenv import load_dotenv
 
 
@@ -132,17 +132,14 @@ class TerminalChatbot:
     def submit_feedback(self):
         """Submit manual feedback for optimization"""
         print("\n💭 Manual Feedback Submission")
-        print("Enter your feedback (press Enter twice to finish):")
+        print("Enter your feedback (type 'END' on a new line to finish):")
         
         lines = []
-        empty_count = 0
-        while empty_count < 2:
+        while True:
             line = input()
-            if line:
-                lines.append(line)
-                empty_count = 0
-            else:
-                empty_count += 1
+            if line.strip().upper() == "END":
+                break
+            lines.append(line)
         
         feedback = "\n".join(lines).strip()
         

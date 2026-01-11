@@ -211,12 +211,16 @@ self.config = SystemConfig(
 
 ```python
 # Add JSON validator
+from src import JSONValidator
 self.system.add_validator(JSONValidator(required_fields=["key1", "key2"]))
 
 # Add regex validator
+from src import RegexValidator
 self.system.add_validator(RegexValidator(pattern=r'\[.*\]'))
 
 # Add custom validator
+from src import CustomValidator
+
 def my_validator(output: str, context) -> bool:
     return "important_word" in output.lower()
 
