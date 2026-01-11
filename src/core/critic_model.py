@@ -1,15 +1,15 @@
-from typing import Optional, Dict, Any, List
+from typing import Dict, Any, List
 import json
 import time
 import os
 from dotenv import load_dotenv
 
-from langchain_anthropic import ChatAnthropic
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage
+# LangChain imports are optional - will be imported only if needed
+# from langchain_anthropic import ChatAnthropic
+# from langchain_openai import ChatOpenAI
+# from langchain_core.messages import HumanMessage, SystemMessage
 
-from ..models.config import SystemConfig, OptimizationAttempt
-from ..models.failure import FailureEntry
+from ..models.config import SystemConfig, OptimizationAttempt, FailureEntry
 from ..models.critic_response import CriticResponse
 from ..models.version import VersionMetadata
 from .instruction_manager import InstructionManager
@@ -32,14 +32,25 @@ class CriticModel:
         self.system_prompt = self._build_system_prompt()
 
     def _initialize_model(self):
-        """Initialize the language model with LangChain"""
+        """Initialize the critic model with LangChain"""
         model_name = self.config.critic_model.lower()
 
         if "claude" in model_name or "anthropic" in model_name:
             # Use Anthropic Claude
+            try:
+                from langchain_anthropic import ChatAnthropic
+            except ImportError:
+                print("Warning: langchain-anthropic not installed. Using mock model.")
+                return MockCriticModel(
+                    self.config.critic_model, self.config.temperature_critic
+                )
+
             api_key = os.getenv("ANTHROPIC_API_KEY")
             if not api_key:
-                raise ValueError("ANTHROPIC_API_KEY not found in environment variables")
+                print("Warning: ANTHROPIC_API_KEY not found. Using mock model.")
+                return MockCriticModel(
+                    self.config.critic_model, self.config.temperature_critic
+                )
 
             return ChatAnthropic(
                 model=self.config.critic_model,
@@ -49,9 +60,20 @@ class CriticModel:
 
         elif "gpt" in model_name or "openai" in model_name:
             # Use OpenAI GPT
+            try:
+                from langchain_openai import ChatOpenAI
+            except ImportError:
+                print("Warning: langchain-openai not installed. Using mock model.")
+                return MockCriticModel(
+                    self.config.critic_model, self.config.temperature_critic
+                )
+
             api_key = os.getenv("OPENAI_API_KEY")
             if not api_key:
-                raise ValueError("OPENAI_API_KEY not found in environment variables")
+                print("Warning: OPENAI_API_KEY not found. Using mock model.")
+                return MockCriticModel(
+                    self.config.critic_model, self.config.temperature_critic
+                )
 
             return ChatOpenAI(
                 model=self.config.critic_model,
@@ -125,13 +147,23 @@ class CriticModel:
             # Build prompt
             prompt = self._build_optimization_prompt(failure, context, attempt_number)
 
-            # Execute with LangChain
-            messages = [
-                SystemMessage(content=self.system_prompt),
-                HumanMessage(content=prompt),
-            ]
-
+            # Execute with model
             try:
+                from langchain_core.messages import HumanMessage, SystemMessage
+
+                messages = [
+                    SystemMessage(content=self.system_prompt),
+                    HumanMessage(content=prompt),
+                ]
+
+                response = self.model.invoke(messages)
+                response_text = response.content
+            except ImportError:
+                # If langchain is not available, use simple message format
+                messages = [
+                    {"role": "system", "content": self.system_prompt},
+                    {"role": "user", "content": prompt},
+                ]
                 response = self.model.invoke(messages)
                 response_text = response.content
             except Exception as e:

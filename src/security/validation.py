@@ -4,7 +4,7 @@ Input validation and sanitization for security
 
 import re
 import html
-from typing import Any, Dict, List, Optional, Union, Callable
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 import json
 from pydantic import BaseModel, Field, validator
@@ -122,7 +122,7 @@ class SecurityValidator:
             try:
                 result = urlparse(input_str)
                 return all([result.scheme, result.netloc])
-            except:
+            except Exception:
                 return False
 
         elif validation_type == "email":

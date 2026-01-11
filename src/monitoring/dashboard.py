@@ -2,9 +2,8 @@
 Web dashboard for performance monitoring
 """
 
-from typing import Dict, Any, Optional
-from datetime import datetime, timedelta
-import json
+import asyncio
+from datetime import datetime
 from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -12,7 +11,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
-from .metrics import MetricsCollector, SystemMetrics
+from .metrics import MetricsCollector
 
 
 class DashboardServer:
@@ -825,7 +824,3 @@ class DashboardServer:
         config = uvicorn.Config(self.app, host=self.host, port=self.port)
         server = uvicorn.Server(config)
         await server.serve()
-
-
-# Import asyncio for WebSocket support
-import asyncio

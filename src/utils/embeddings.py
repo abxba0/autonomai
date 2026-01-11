@@ -2,8 +2,7 @@
 Embeddings module for semantic similarity analysis of failures
 """
 
-from typing import List, Dict, Any, Optional, Tuple
-import numpy as np
+from typing import List, Optional, Tuple
 from sentence_transformers import SentenceTransformer
 import chromadb
 from chromadb.config import Settings

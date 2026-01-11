@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 import json
-import shutil
 
 from ..models.version import InstructionVersion, VersionMetadata
 from ..models.config import SystemConfig
@@ -93,7 +92,7 @@ class VersionController:
                 content = f.read()
 
             # Parse version (simplified - in real implementation would parse properly)
-            lines = content.split("\n")
+            content.split("\n")  # Parse lines if needed
 
             # Extract metadata
             metadata_dict = None

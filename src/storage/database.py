@@ -22,7 +22,6 @@ from dotenv import load_dotenv
 from ..models.config import SystemConfig
 from ..models.failure import FailureEntry
 from ..models.version import VersionMetadata, InstructionVersion
-from ..models.critic_response import CriticResponse
 
 # Load environment variables
 load_dotenv()

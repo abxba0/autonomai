@@ -5,7 +5,6 @@ Metrics collection and aggregation for performance monitoring
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
-import time
 import statistics
 from collections import defaultdict, deque
 import json

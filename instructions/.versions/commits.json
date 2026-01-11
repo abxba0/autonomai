@@ -1,0 +1,16 @@
+[
+  {
+    "version_id": "v20260111_125715",
+    "timestamp": "2026-01-11T12:57:15.804910",
+    "trigger_type": "initial",
+    "failure_signature": null,
+    "critic_justification": "System initialization",
+    "diff_summary": "Initial version",
+    "rules_added": 0,
+    "rules_modified": 0,
+    "rules_deprecated": 0,
+    "parent_version": null,
+    "user_approved": false,
+    "approval_notes": null
+  }
+]

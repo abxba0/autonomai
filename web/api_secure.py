@@ -5,7 +5,7 @@ with authentication, authorization, rate limiting, and input validation
 
 from fastapi import FastAPI, HTTPException, Depends, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List, Dict, Any
 import uvicorn
@@ -28,30 +28,17 @@ from src.security import (
     authenticate_user,
     create_access_token,
     create_refresh_token,
-    get_current_user,
-    require_permission,
-    require_role,
     verify_token,
-    Token,
-    TokenData,
-    # Input validation
-    sanitize_input,
-    validate_input,
-    InputValidator,
+    get_user,
     SecurityValidator,
     SecurityConfig,
     # Rate limiting
     RateLimiter,
     APIKeyManager,
     RateLimitConfig,
-    RateLimitStrategy,
-    check_rate_limit,
-    validate_api_key,
-    # Audit logging
     AuditLogger,
     SecurityMonitor,
     log_security_event,
-    monitor_suspicious_activity,
     AuditEventType,
     AuditSeverity,
 )
@@ -582,7 +569,7 @@ async def refresh_token(
 
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token",
@@ -876,7 +863,7 @@ if __name__ == "__main__":
     debug = os.getenv("DEBUG", "false").lower() == "true"
 
     print(f"Starting secure server on {host}:{port}")
-    print(f"Security features enabled:")
+    print("Security features enabled:")
     print(f"  - Authentication: {SECURITY_CONFIG.enable_authentication}")
     print(f"  - Rate limiting: {SECURITY_CONFIG.enable_rate_limiting}")
     print(f"  - Input validation: {SECURITY_CONFIG.enable_input_validation}")

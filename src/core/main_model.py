@@ -1,14 +1,13 @@
 from typing import Optional, Dict, Any, List
-import time
 import os
 from dotenv import load_dotenv
 
-from langchain_anthropic import ChatAnthropic
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage
+# LangChain imports are optional - will be imported only if needed
+# from langchain_anthropic import ChatAnthropic
+# from langchain_openai import ChatOpenAI
+# from langchain_core.messages import HumanMessage, SystemMessage
 
-from ..models.config import SystemConfig
-from ..models.failure import FailureEntry
+from ..models.config import SystemConfig, FailureEntry
 from .instruction_manager import InstructionManager
 from .validator import ValidationPipeline
 
@@ -38,9 +37,16 @@ class MainModel:
 
         if "claude" in model_name or "anthropic" in model_name:
             # Use Anthropic Claude
+            try:
+                from langchain_anthropic import ChatAnthropic
+            except ImportError:
+                print("Warning: langchain-anthropic not installed. Using mock model.")
+                return MockModel(self.config.main_model, self.config.temperature_main)
+
             api_key = os.getenv("ANTHROPIC_API_KEY")
             if not api_key:
-                raise ValueError("ANTHROPIC_API_KEY not found in environment variables")
+                print("Warning: ANTHROPIC_API_KEY not found. Using mock model.")
+                return MockModel(self.config.main_model, self.config.temperature_main)
 
             return ChatAnthropic(
                 model=self.config.main_model,
@@ -50,9 +56,16 @@ class MainModel:
 
         elif "gpt" in model_name or "openai" in model_name:
             # Use OpenAI GPT
+            try:
+                from langchain_openai import ChatOpenAI
+            except ImportError:
+                print("Warning: langchain-openai not installed. Using mock model.")
+                return MockModel(self.config.main_model, self.config.temperature_main)
+
             api_key = os.getenv("OPENAI_API_KEY")
             if not api_key:
-                raise ValueError("OPENAI_API_KEY not found in environment variables")
+                print("Warning: OPENAI_API_KEY not found. Using mock model.")
+                return MockModel(self.config.main_model, self.config.temperature_main)
 
             return ChatOpenAI(
                 model=self.config.main_model,
@@ -88,22 +101,54 @@ class MainModel:
         system_instructions = self.instruction_manager.get_full_instructions()
 
         # Build LangChain messages
-        messages = [SystemMessage(content=system_instructions)]
-
-        # Add conversation context if provided
-        if conversation_context:
-            for msg in conversation_context:
-                if msg.get("role") == "user":
-                    messages.append(HumanMessage(content=msg["content"]))
-                elif msg.get("role") == "assistant":
-                    messages.append(SystemMessage(content=msg["content"]))
-
-        messages.append(HumanMessage(content=user_query))
-
-        # Execute with LangChain
         try:
-            response = self.model.invoke(messages)
-            output = response.content
+            from langchain_core.messages import HumanMessage, SystemMessage
+
+            messages = [SystemMessage(content=system_instructions)]
+
+            # Add conversation context if provided
+            if conversation_context:
+                for msg in conversation_context:
+                    if msg.get("role") == "user":
+                        messages.append(HumanMessage(content=msg["content"]))
+                    elif msg.get("role") == "assistant":
+                        messages.append(SystemMessage(content=msg["content"]))
+
+            messages.append(HumanMessage(content=user_query))
+        except ImportError:
+            # If langchain is not available, use simple message format
+            messages = [
+                {"role": "system", "content": system_instructions},
+                {"role": "user", "content": user_query},
+            ]
+            if conversation_context:
+                messages = (
+                    [{"role": "system", "content": system_instructions}]
+                    + conversation_context
+                    + [{"role": "user", "content": user_query}]
+                )
+
+        # Execute with model
+        try:
+            # Check if messages are LangChain message objects or simple dicts
+            if hasattr(messages[0], "content"):
+                # LangChain message objects
+                response = self.model.invoke(messages)
+                output = response.content
+            else:
+                # Simple dict format - extract user query
+                user_query_from_messages = None
+                for msg in reversed(messages):
+                    if msg.get("role") == "user":
+                        user_query_from_messages = msg.get("content")
+                        break
+
+                if user_query_from_messages:
+                    response = self.model.invoke(messages)
+                    output = response.content
+                else:
+                    # Fallback to mock generation
+                    output = self._mock_generate(system_instructions, user_query)
         except Exception as e:
             # Fallback to mock model if real LLM fails
             print(f"LLM call failed: {e}. Using mock model.")

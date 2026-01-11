@@ -45,9 +45,9 @@ def test_core_models():
         version = VersionMetadata(
             version_id="v1.0.0",
             timestamp="2025-01-10T13:51:51",
-            change_summary="Initial version",
-            author="system",
-            instructions_hash="abc123",
+            trigger_type="auto_validation",
+            critic_justification="Initial version",
+            diff_summary="Initial version",
         )
         print(f"✓ VersionMetadata created: {version.version_id}")
 
@@ -70,13 +70,13 @@ def test_validators():
 
         # Test JSONValidator
         json_validator = JSONValidator(required_fields=["status"])
-        passed, message = json_validator.validate('{"status": "ok"}')
-        print(f"✓ JSONValidator test: {passed}")
+        result = json_validator.validate('{"status": "ok"}')
+        print(f"✓ JSONValidator test: {result.passed}")
 
         # Test LengthValidator
         length_validator = LengthValidator(min_length=5)
-        passed, message = length_validator.validate("hello world")
-        print(f"✓ LengthValidator test: {passed}")
+        result = length_validator.validate("hello world")
+        print(f"✓ LengthValidator test: {result.passed}")
 
         # Test ValidationPipeline
         pipeline = ValidationPipeline()
@@ -102,10 +102,10 @@ def test_storage():
 
     try:
         # Test MarkdownHandler
-        from storage.markdown_handler import MarkdownHandler
+        from src.storage.markdown_handler import MarkdownHandler
 
         handler = MarkdownHandler()
-        print(f"✓ MarkdownHandler created")
+        print("✓ MarkdownHandler created")
 
         # Test reading/writing
         test_content = "# Test Instructions\n\nThis is a test."
@@ -128,10 +128,10 @@ def test_instruction_manager():
     print("\nTesting instruction manager...")
 
     try:
-        from core.instruction_manager import InstructionManager
+        from src.core.instruction_manager import InstructionManager
 
         manager = InstructionManager()
-        print(f"✓ InstructionManager created")
+        print("✓ InstructionManager created")
 
         # Test getting instructions
         instructions = manager.get_current_instructions()

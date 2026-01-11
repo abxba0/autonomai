@@ -9,22 +9,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
 from src.security import (
     # Authentication
-    User,
     Role,
-    Permission,
     authenticate_user,
     create_access_token,
     create_refresh_token,
-    get_current_user,
-    require_permission,
     verify_token,
-    TokenData,
-    # Input validation
     sanitize_input,
     validate_input,
-    InputValidator,
-    SecurityValidator,
-    # Rate limiting
     RateLimiter,
     APIKeyManager,
     RateLimitConfig,
@@ -32,8 +23,7 @@ from src.security import (
     # Audit logging
     AuditLogger,
     SecurityMonitor,
-    log_security_event,
-    monitor_suspicious_activity,
+    AuditEvent,
     AuditEventType,
     AuditSeverity,
 )
@@ -190,7 +180,6 @@ def test_audit_logging():
 
     # Log test event
     import uuid
-    from datetime import datetime
 
     test_event = AuditEvent(
         event_id=str(uuid.uuid4()),
@@ -230,7 +219,6 @@ def test_security_monitoring():
 
     # Create test events
     import uuid
-    from datetime import datetime, timedelta
 
     for i in range(15):  # Exceed threshold of 10
         event = AuditEvent(
@@ -247,7 +235,7 @@ def test_security_monitoring():
             error_message="Invalid credentials",
         )
 
-        alerts = security_monitor.monitor_suspicious_activity(event)
+        security_monitor.monitor_suspicious_activity(event)
 
     # Should generate alerts for excessive failed logins
     print("✓ Security monitoring active")

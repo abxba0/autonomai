@@ -52,7 +52,7 @@ def test_complete_system():
         versions = system.get_version_history()
         print(f"   ✓ Version count: {len(versions)}")
         if versions:
-            print(f"   ✓ Latest version: {versions[-1].version_id}")
+            print(f"   ✓ Latest version: {versions[-1]['version_id']}")
 
         print("\n7. Testing failure processing...")
         failure_result = system.process_failure(
@@ -89,7 +89,7 @@ def test_complete_system():
         )
         custom_system = SelfOptimizingSystem(custom_config)
         custom_status = custom_system.get_status()
-        print(f"   ✓ Custom config loaded")
+        print("   ✓ Custom config loaded")
         print(f"   ✓ Custom main model: {custom_status['config']['main_model']}")
         print(
             f"   ✓ Custom auto-optimization: {custom_status['config']['enable_auto_optimization']}"
@@ -97,10 +97,10 @@ def test_complete_system():
 
         print("\n✅ All tests passed!")
         print("\n=== System Summary ===")
-        print(f"Total components tested: 10")
-        print(f"System architecture: Complete")
-        print(f"Core functionality: Working")
-        print(f"Ready for deployment: Yes")
+        print("Total components tested: 10")
+        print("System architecture: Complete")
+        print("Core functionality: Working")
+        print("Ready for deployment: Yes")
 
         return True
 
