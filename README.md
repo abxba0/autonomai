@@ -186,30 +186,71 @@ self_optimizing_system/
 
 ## Integration with LangChain
 
-The system is designed to work with LangChain models. To use actual LLMs:
+The system is designed to work with LangChain models and now supports multiple AI providers:
 
-1. Install LangChain and your preferred provider:
+### Supported Providers
+
+1. **Anthropic Claude** - Advanced reasoning and instruction following
+2. **OpenAI GPT** - General-purpose language models
+3. **Google Gemini** - Multi-modal AI capabilities
+4. **Deepseek** - Efficient and cost-effective models
+5. **Openrouter** - Access to multiple providers through one API
+
+### Quick Setup
+
+1. Install LangChain and provider packages:
 ```bash
-pip install langchain langchain-anthropic
+pip install -r requirements.txt
 ```
 
-2. Update the model initialization in `main_model.py` and `critic_model.py`:
+2. Set up API keys in `.env`:
+```bash
+# Choose one or more providers
+ANTHROPIC_API_KEY=your_key_here
+OPENAI_API_KEY=your_key_here
+GOOGLE_API_KEY=your_key_here
+DEEPSEEK_API_KEY=your_key_here
+OPENROUTER_API_KEY=your_key_here
+```
+
+3. Configure your system:
 ```python
-from langchain_anthropic import ChatAnthropic
+from src.models.config import SystemConfig
+from src import SelfOptimizingSystem
 
-# Replace MockModel with actual LangChain model
-self.model = ChatAnthropic(
-    model=config.main_model,
-    temperature=config.temperature_main
+config = SystemConfig(
+    main_model="claude-3-5-sonnet-20241022",
+    main_model_provider="anthropic",  # Optional: auto-detected
+    critic_model="gpt-4-turbo-preview",
+    critic_model_provider="openai",
 )
+
+system = SelfOptimizingSystem(config)
 ```
+
+For detailed provider configuration, see [Provider Configuration Guide](docs/provider-configuration.md).
+
+### Example Usage
+
+```python
+# Use different providers for main and critic models
+config = SystemConfig(
+    main_model="claude-3-5-sonnet-20241022",  # Anthropic
+    critic_model="gpt-4-turbo-preview",       # OpenAI
+)
+
+system = SelfOptimizingSystem(config)
+result = system.execute("Your query here")
+```
+
+See `examples/multi_provider_usage.py` for more examples.
 
 ## Limitations
 
-- Currently uses mock models for demonstration
-- Semantic similarity features are placeholders
-- Requires manual integration with actual LLM APIs
+- Mock models are used as fallback when API keys are not configured
+- Semantic similarity features require additional setup (ChromaDB, sentence-transformers)
 - File-based storage (not suitable for high-volume production)
+- Some providers may have specific rate limits or model availability
 
 ## Security Features
 
@@ -283,11 +324,11 @@ python api.py
 2. **Advanced Security**: Two-factor authentication, IP whitelisting
 3. **Compliance Features**: GDPR tools, data retention policies
 4. **Integration Features**: SSO support, OAuth2/OIDC integration
-5. **Real LLM Integration**: Connect to Claude, GPT, or other models
-6. **Embedding Support**: Add semantic similarity for failure analysis
+5. **Additional Providers**: Support for more AI providers (Cohere, AI21, etc.)
+6. **Embedding Support**: Enhanced semantic similarity for failure analysis
 7. **Database Backend**: Replace file storage with database
 8. **Web Interface**: Add dashboard for monitoring and manual review
-9. **Multi-model Support**: Support for multiple LLM providers
+9. **Advanced Model Routing**: Automatic model selection based on task type
 10. **Batch Processing**: Optimize multiple failures simultaneously
 
 ## License

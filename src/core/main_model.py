@@ -34,52 +34,146 @@ class MainModel:
     def _initialize_model(self):
         """Initialize the language model with LangChain"""
         model_name = self.config.main_model.lower()
+        provider = self.config.main_model_provider.lower() if self.config.main_model_provider else None
 
-        if "claude" in model_name or "anthropic" in model_name:
-            # Use Anthropic Claude
-            try:
-                from langchain_anthropic import ChatAnthropic
-            except ImportError:
-                print("Warning: langchain-anthropic not installed. Using mock model.")
-                return MockModel(self.config.main_model, self.config.temperature_main)
+        # Detect provider from model name if not explicitly set
+        if not provider:
+            provider = self._detect_provider(model_name)
 
-            api_key = os.getenv("ANTHROPIC_API_KEY")
-            if not api_key:
-                print("Warning: ANTHROPIC_API_KEY not found. Using mock model.")
-                return MockModel(self.config.main_model, self.config.temperature_main)
-
-            return ChatAnthropic(
-                model=self.config.main_model,
-                temperature=self.config.temperature_main,
-                api_key=api_key,
-            )
-
-        elif "gpt" in model_name or "openai" in model_name:
-            # Use OpenAI GPT
-            try:
-                from langchain_openai import ChatOpenAI
-            except ImportError:
-                print("Warning: langchain-openai not installed. Using mock model.")
-                return MockModel(self.config.main_model, self.config.temperature_main)
-
-            api_key = os.getenv("OPENAI_API_KEY")
-            if not api_key:
-                print("Warning: OPENAI_API_KEY not found. Using mock model.")
-                return MockModel(self.config.main_model, self.config.temperature_main)
-
-            return ChatOpenAI(
-                model=self.config.main_model,
-                temperature=self.config.temperature_main,
-                api_key=api_key,
-            )
-
+        # Initialize based on provider
+        if provider == "anthropic":
+            return self._init_anthropic()
+        elif provider == "openai":
+            return self._init_openai()
+        elif provider == "google":
+            return self._init_google()
+        elif provider == "deepseek":
+            return self._init_deepseek()
+        elif provider == "openrouter":
+            return self._init_openrouter()
         else:
             # Fallback to mock model for testing
             print(f"Warning: Using mock model for {self.config.main_model}")
-            print(
-                "Set ANTHROPIC_API_KEY or OPENAI_API_KEY environment variable for real LLM"
-            )
+            print("Set appropriate API key environment variable for real LLM")
             return MockModel(self.config.main_model, self.config.temperature_main)
+
+    def _detect_provider(self, model_name: str) -> str:
+        """Auto-detect provider from model name"""
+        if "claude" in model_name or "anthropic" in model_name:
+            return "anthropic"
+        elif "gpt" in model_name or "openai" in model_name:
+            return "openai"
+        elif "gemini" in model_name or "google" in model_name:
+            return "google"
+        elif "deepseek" in model_name:
+            return "deepseek"
+        elif "openrouter" in model_name:
+            return "openrouter"
+        return "unknown"
+
+    def _init_anthropic(self):
+        """Initialize Anthropic Claude model"""
+        try:
+            from langchain_anthropic import ChatAnthropic
+        except ImportError:
+            print("Warning: langchain-anthropic not installed. Install with: pip install langchain-anthropic")
+            return MockModel(self.config.main_model, self.config.temperature_main)
+
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            print("Warning: ANTHROPIC_API_KEY not found. Using mock model.")
+            return MockModel(self.config.main_model, self.config.temperature_main)
+
+        return ChatAnthropic(
+            model=self.config.main_model,
+            temperature=self.config.temperature_main,
+            api_key=api_key,
+        )
+
+    def _init_openai(self):
+        """Initialize OpenAI GPT model"""
+        try:
+            from langchain_openai import ChatOpenAI
+        except ImportError:
+            print("Warning: langchain-openai not installed. Install with: pip install langchain-openai")
+            return MockModel(self.config.main_model, self.config.temperature_main)
+
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            print("Warning: OPENAI_API_KEY not found. Using mock model.")
+            return MockModel(self.config.main_model, self.config.temperature_main)
+
+        return ChatOpenAI(
+            model=self.config.main_model,
+            temperature=self.config.temperature_main,
+            api_key=api_key,
+        )
+
+    def _init_google(self):
+        """Initialize Google Gemini model"""
+        try:
+            from langchain_google_genai import ChatGoogleGenerativeAI
+        except ImportError:
+            print("Warning: langchain-google-genai not installed. Install with: pip install langchain-google-genai")
+            return MockModel(self.config.main_model, self.config.temperature_main)
+
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            print("Warning: GOOGLE_API_KEY not found. Using mock model.")
+            return MockModel(self.config.main_model, self.config.temperature_main)
+
+        return ChatGoogleGenerativeAI(
+            model=self.config.main_model,
+            temperature=self.config.temperature_main,
+            google_api_key=api_key,
+        )
+
+    def _init_deepseek(self):
+        """Initialize Deepseek model (via OpenAI-compatible API)"""
+        try:
+            from langchain_openai import ChatOpenAI
+        except ImportError:
+            print("Warning: langchain-openai not installed. Install with: pip install langchain-openai")
+            return MockModel(self.config.main_model, self.config.temperature_main)
+
+        api_key = os.getenv("DEEPSEEK_API_KEY")
+        base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
+        
+        if not api_key:
+            print("Warning: DEEPSEEK_API_KEY not found. Using mock model.")
+            return MockModel(self.config.main_model, self.config.temperature_main)
+
+        return ChatOpenAI(
+            model=self.config.main_model,
+            temperature=self.config.temperature_main,
+            api_key=api_key,
+            base_url=base_url,
+        )
+
+    def _init_openrouter(self):
+        """Initialize Openrouter model (via OpenAI-compatible API)"""
+        try:
+            from langchain_openai import ChatOpenAI
+        except ImportError:
+            print("Warning: langchain-openai not installed. Install with: pip install langchain-openai")
+            return MockModel(self.config.main_model, self.config.temperature_main)
+
+        api_key = os.getenv("OPENROUTER_API_KEY")
+        
+        if not api_key:
+            print("Warning: OPENROUTER_API_KEY not found. Using mock model.")
+            return MockModel(self.config.main_model, self.config.temperature_main)
+
+        return ChatOpenAI(
+            model=self.config.main_model,
+            temperature=self.config.temperature_main,
+            api_key=api_key,
+            base_url="https://openrouter.ai/api/v1",
+            default_headers={
+                "HTTP-Referer": "https://github.com/abxba0/autonomai",
+                "X-Title": "AutonomAI Self-Optimizing System",
+            },
+        )
 
     def execute(
         self,

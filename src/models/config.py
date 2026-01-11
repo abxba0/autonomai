@@ -22,6 +22,12 @@ class SystemConfig:
     critic_model: str = "claude-3-haiku-20240307"
     temperature_main: float = 0.7
     temperature_critic: float = 0.3
+    
+    # Provider Configuration
+    # Supported providers: "anthropic", "openai", "google", "deepseek", "openrouter"
+    # If not specified, will auto-detect from model name
+    main_model_provider: Optional[str] = None
+    critic_model_provider: Optional[str] = None
 
     # Failure Log Management
     max_failure_log_size: int = 50
