@@ -1,5 +1,12 @@
 # System Instructions
 
+Generated: 2026-01-11T15:54:03.565276
+Current Version: v20260111_125715
+
+---
+
+# System Instructions
+
 Generated: 2026-01-11T13:08:55.993256
 Current Version: v20260111_125715
 
@@ -12,31 +19,18 @@ Current Version: v20260111_125715
 
 ---
 
-# System Instructions
-
-Generated: 2026-01-11T13:04:43.939916
-Current Version: v20260111_125715
-
----
-
 ## Failure Log
 
 ### Recent Failures (Full Detail)
 
-### Failure #20260111_130855 [AUTO_VALIDATION] - 2026-01-11T13:08:55.993209 - Severity: MODERATE
-**Signature**: `47d547c34804`
-**Description**: Test failure for validation
-**Validation Errors**: [
-  [
-    false,
-    "Test validation error"
-  ]
-]
+### Failure #20260111_155403 [HUMAN_FEEDBACK] - 2026-01-11T15:54:03.565230 - Severity: MODERATE
+**Signature**: `2e756b443c39`
+**Description**: User feedback: Test feedback
 **Last Output**: 
 ```
-Test output that failed validation
+Mock response from test model
 ```
-**User Query**: Test query
+**User Query**: What is 2+2?
 
 ---
 

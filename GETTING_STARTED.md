@@ -24,19 +24,26 @@ pip install -r requirements.txt
 ### 2. Basic Usage
 
 ```python
-from src import SelfOptimizingSystem
+from src import SelfOptimizingSystem, SystemConfig
 
-# Create the system
-system = SelfOptimizingSystem()
+# Create the system with your chosen AI provider
+config = SystemConfig(
+    main_model="claude-3-5-sonnet-20241022",  # Or gpt-4-turbo, gemini-pro, etc.
+    critic_model="claude-3-haiku-20240307",
+    main_model_provider="anthropic",  # Optional: auto-detected from model name
+    critic_model_provider="anthropic",
+)
+
+system = SelfOptimizingSystem(config)
 
 # Execute a query
 result = system.execute("What is 2+2?")
-print(f"Result: {result}")
+print(f"Result: {result['output']}")
 
 # Process feedback
 feedback_result = system.process_feedback(
     user_query="What is 2+2?",
-    model_output=result,
+    model_output=result['output'],
     feedback_type="auto_validation",
     feedback_details="Output validation passed"
 )
@@ -46,29 +53,76 @@ versions = system.get_version_history()
 print(f"Total versions: {len(versions)}")
 ```
 
+**Using Different Providers:**
+
+```python
+# Use Google Gemini
+config = SystemConfig(
+    main_model="gemini-pro",
+    main_model_provider="google",
+)
+
+# Use Deepseek
+config = SystemConfig(
+    main_model="deepseek-chat",
+    main_model_provider="deepseek",
+)
+
+# Mix providers (e.g., Claude for main, GPT for critic)
+config = SystemConfig(
+    main_model="claude-3-5-sonnet-20241022",
+    critic_model="gpt-4-turbo-preview",
+    main_model_provider="anthropic",
+    critic_model_provider="openai",
+)
+```
+
 ### 3. Configuration
 
 Create a `.env` file in the project root:
 
 ```env
-# API Keys (optional - system works with mock models by default)
-ANTHROPIC_API_KEY=your_anthropic_key
-OPENAI_API_KEY=your_openai_key
+# API Keys - Choose one or more providers
+ANTHROPIC_API_KEY=your_anthropic_key       # For Claude models
+OPENAI_API_KEY=your_openai_key             # For GPT models
+GOOGLE_API_KEY=your_google_key             # For Gemini models
+DEEPSEEK_API_KEY=your_deepseek_key         # For Deepseek models
+OPENROUTER_API_KEY=your_openrouter_key     # For Openrouter (multi-provider)
 
 # Database Configuration (optional)
 DATABASE_URL=sqlite:///./self_optimizing.db
 
 # System Settings
 ENABLE_AUTO_OPTIMIZATION=true
-MAIN_MODEL_TYPE=mock  # or "anthropic", "openai"
-CRITIC_MODEL_TYPE=mock  # or "anthropic", "openai"
 ```
+
+**Supported AI Providers:**
+- **Anthropic Claude** - Advanced reasoning and instruction following
+- **OpenAI GPT** - General-purpose language models  
+- **Google Gemini** - Multi-modal AI capabilities
+- **Deepseek** - Efficient and cost-effective models
+- **Openrouter** - Access multiple providers through one API
+
+**Get API Keys:**
+- Anthropic: https://console.anthropic.com/
+- OpenAI: https://platform.openai.com/
+- Google: https://makersuite.google.com/
+- Deepseek: https://platform.deepseek.com/
+- Openrouter: https://openrouter.ai/
+
+See [Provider Configuration Guide](docs/provider-configuration.md) for detailed setup instructions.
 
 ## Core Components
 
 ### 1. Main Model
 - Executes user queries using current instructions
-- Can use mock models or real LLMs (Anthropic Claude, OpenAI GPT)
+- Supports multiple AI providers:
+  - Anthropic Claude (claude-3-opus, claude-3-5-sonnet, claude-3-haiku)
+  - OpenAI GPT (gpt-4-turbo, gpt-4, gpt-3.5-turbo)
+  - Google Gemini (gemini-pro)
+  - Deepseek (deepseek-chat, deepseek-coder)
+  - Openrouter (any model via openrouter/provider/model format)
+- Falls back to mock models when API keys are not configured
 - Validates outputs against defined rules
 
 ### 2. Critic Model
