@@ -128,11 +128,10 @@ class FailureEntry:
                 md += f"**Validation Errors**: {json.dumps(self.validation_errors, indent=2)}\n"
             if self.last_model_output:
                 # Handle case where last_model_output might be None or empty
-                if self.last_model_output:
-                    truncated = self.last_model_output[:500] + (
-                        "..." if len(self.last_model_output) > 500 else ""
-                    )
-                    md += f"**Last Output**: \n```\n{truncated}\n```\n"
+                truncated = self.last_model_output[:500] + (
+                    "..." if len(self.last_model_output) > 500 else ""
+                )
+                md += f"**Last Output**: \n```\n{truncated}\n```\n"
             if self.user_query:
                 md += f"**User Query**: {self.user_query}\n"
 
