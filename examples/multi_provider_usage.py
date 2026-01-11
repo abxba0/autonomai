@@ -6,13 +6,11 @@ Demonstrates how to use different AI providers with the Self-Optimizing System
 
 import sys
 import os
-from pathlib import Path
 
-# Add src directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+# Add parent directory to path to import src package
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from models.config import SystemConfig
-from src import SelfOptimizingSystem
+from src import SelfOptimizingSystem, SystemConfig
 
 
 def example_anthropic_claude():
