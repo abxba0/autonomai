@@ -30,14 +30,42 @@ This system implements a self-optimizing AI assistant that:
 
 ## Installation
 
+### Basic Installation (Cloud AI Only)
+
+For minimal installation with cloud AI providers only:
+
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd self_optimizing_system
 
-# Install dependencies (if using LangChain)
-pip install langchain langchain-anthropic
+# Install core dependencies only
+pip install -r requirements.txt
+# Or install as package
+pip install -e .
 ```
+
+### Optional Features
+
+Install additional features as needed:
+
+```bash
+# For web API and security features (FastAPI, JWT, Redis)
+pip install -e ".[web]"
+
+# For local AI embeddings (ChromaDB, sentence-transformers)
+pip install -e ".[local]"
+
+# Install everything
+pip install -e ".[all]"
+```
+
+**Modular Dependencies:**
+- **Base**: Core logic, cloud AI providers (Anthropic, OpenAI, Google), SQLAlchemy
+- **Web**: FastAPI, Uvicorn, JWT authentication, Redis, input sanitization
+- **Local**: ChromaDB vector database, sentence-transformers for embeddings
+
+The system gracefully falls back to simpler alternatives if optional dependencies are missing.
 
 ## Quick Start
 
