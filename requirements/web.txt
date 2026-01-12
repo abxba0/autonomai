@@ -1,0 +1,6 @@
+# Web-specific dependencies - API server and security
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pyjwt>=2.0.0
+bleach>=6.0.0
+redis>=4.0.0

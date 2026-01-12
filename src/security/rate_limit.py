@@ -9,8 +9,22 @@ import hashlib
 import secrets
 from dataclasses import dataclass, field
 from enum import Enum
-import redis
-from fastapi import HTTPException, status
+
+# Try to import redis as optional dependency
+try:
+    import redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
+    redis = None
+
+try:
+    from fastapi import HTTPException, status
+    FASTAPI_AVAILABLE = True
+except ImportError:
+    FASTAPI_AVAILABLE = False
+    HTTPException = None
+    status = None
 
 
 class RateLimitStrategy(str, Enum):
@@ -53,21 +67,32 @@ class RateLimiter:
     ):
         self.config = config
         self.use_redis = use_redis
+        self.redis_client = None
 
         if use_redis:
-            try:
-                self.redis_client = redis.Redis.from_url(
-                    redis_url or "redis://localhost:6379"
-                )
-                self.redis_client.ping()
-            except redis.ConnectionError:
+            if not REDIS_AVAILABLE:
+                print("Warning: Redis requested but redis package not available")
+                print("Install with: pip install -e \".[web]\" for redis support")
+                print("Falling back to in-memory rate limiting")
                 self.use_redis = False
-                self.redis_client = None
-                print(
-                    "Redis connection failed, falling back to in-memory rate limiting"
-                )
+            else:
+                try:
+                    self.redis_client = redis.Redis.from_url(
+                        redis_url or "redis://localhost:6379"
+                    )
+                    self.redis_client.ping()
+                except redis.ConnectionError:
+                    self.use_redis = False
+                    self.redis_client = None
+                    print(
+                        "Redis connection failed, falling back to in-memory rate limiting"
+                    )
+                except Exception as e:
+                    self.use_redis = False
+                    self.redis_client = None
+                    print(f"Redis initialization failed: {e}, falling back to in-memory rate limiting")
 
-        if not use_redis:
+        if not self.use_redis:
             self.records: Dict[str, RateLimitRecord] = {}
 
     def _get_redis_key(self, client_id: str, window: str) -> str:
@@ -379,6 +404,13 @@ def check_rate_limit(
     rate_limiter: RateLimiter, client_id: str, endpoint: Optional[str] = None
 ):
     """FastAPI dependency for rate limiting"""
+    if not FASTAPI_AVAILABLE:
+        # If FastAPI is not available, just check and return headers
+        allowed, headers = rate_limiter.check_rate_limit(client_id, endpoint)
+        if not allowed:
+            raise RuntimeError("Rate limit exceeded")
+        return headers
+    
     allowed, headers = rate_limiter.check_rate_limit(client_id, endpoint)
 
     if not allowed:
