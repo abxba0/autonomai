@@ -24,23 +24,6 @@ from src import SelfOptimizingSystem, SystemConfig, CustomValidator
 from src.core.validator import ValidationResult
 
 
-# Common jailbreak patterns and techniques
-JAILBREAK_PATTERNS = [
-    # Direct instruction revelation attempts
-    r"(?i)(show|reveal|display|tell me|what (is|are)|print|output).{0,30}(system prompt|instructions|hidden|secret|initial prompt|base prompt)",
-    r"(?i)ignore.{0,30}(previous|above|prior).{0,30}(instruction|prompt|rule|command)",
-    # Role-play and context switching
-    r"(?i)(pretend|act as|role.?play|you are now|from now on).{0,50}(developer|admin|god mode|root|sudo)",
-    # Format/encoding tricks
-    r"(?i)(repeat|echo|output).{0,30}(word for word|verbatim|exact)",
-    # DAN (Do Anything Now) variants
-    r"(?i)(do anything now|DAN|jailbreak|bypass|unlock)",
-    # Markdown/code block tricks
-    r"```[\s\S]*system.*prompt[\s\S]*```",
-    # Prompt injection markers
-    r"(?i)(end of|stop|cancel|delete).{0,20}(instruction|prompt|rule)",
-]
-
 # Sensitive content that should never be revealed
 SENSITIVE_MARKERS = [
     "SYSTEM INSTRUCTION",
