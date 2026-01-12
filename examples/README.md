@@ -58,6 +58,31 @@ python chatbot.py
 
 See [terminal_chatbot/README.md](terminal_chatbot/README.md) for detailed documentation.
 
+### 4. Hallucination-Proof Data Extractor (`hallucination_proof_extractor.py`)
+Demonstrates preventing LLM hallucinations in data extraction tasks:
+- Extract structured data from messy, unstructured documents
+- Custom validator that checks extracted values against source text
+- Automatic learning when hallucinations are detected
+- Shows the fail → analyze → optimize cycle
+
+**Run it:**
+```bash
+python examples/hallucination_proof_extractor.py
+```
+
+**Features:**
+- 📄 Data extraction from messy documents
+- 🔍 Grounding validation (verifies all extracted values exist in source)
+- 🚫 Hallucination detection and prevention
+- 🔄 Self-optimization for literal fidelity
+- 💡 Real-world application patterns (invoices, receipts, medical records)
+
+**Why this is valuable:**
+- Tackles a common LLM weakness: inventing incorrect details
+- Enforces "grounding" of outputs for reliability
+- Demonstrates learning cycle for improving accuracy
+- Practical for invoice processing, document analysis, and data extraction tasks
+
 ## Getting Started
 
 ### Prerequisites
@@ -104,7 +129,8 @@ If you're new to autonomai, we recommend following this order:
 
 1. **Start with `basic_usage.py`** - Learn the fundamentals
 2. **Explore `multi_provider_usage.py`** - Understand provider options
-3. **Try `terminal_chatbot/`** - See a complete application
+3. **Try `hallucination_proof_extractor.py`** - See advanced validation patterns
+4. **Experiment with `terminal_chatbot/`** - See a complete application
 
 ## Creating Your Own Examples
 
