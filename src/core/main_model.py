@@ -326,7 +326,48 @@ class MockModel:
             keyword in prompt_text for keyword in ["extract", "return", "output"]
         )
         
-        if is_json_request:
+        # Check if code generation is requested
+        is_code_request = any(
+            keyword in prompt_text for keyword in ["write a python", "create a python", "python function", "def ", "function called"]
+        )
+        
+        if is_code_request:
+            # Return sample Python code based on the request
+            if "add" in prompt_text or "sum" in prompt_text:
+                response_content = """```python
+def add_numbers(a, b):
+    \"\"\"Add two numbers and return the sum.\"\"\"
+    return a + b
+```"""
+            elif "filter" in prompt_text and "even" in prompt_text:
+                response_content = """```python
+def filter_even_numbers(numbers):
+    \"\"\"Filter even numbers from a list.\"\"\"
+    return [num for num in numbers if num % 2 == 0]
+```"""
+            elif "reverse" in prompt_text and "word" in prompt_text:
+                response_content = """```python
+def reverse_words(sentence):
+    \"\"\"Reverse each word in a sentence while maintaining word order.\"\"\"
+    words = sentence.split()
+    reversed_words = [word[::-1] for word in words]
+    return ' '.join(reversed_words)
+```"""
+            elif "hello" in prompt_text or "print" in prompt_text:
+                response_content = """```python
+def hello_world():
+    \"\"\"Print Hello, World!\"\"\"
+    print('Hello, World!')
+```"""
+            else:
+                # Generic function example
+                response_content = """```python
+def example_function():
+    \"\"\"Example function demonstrating proper Python structure.\"\"\"
+    result = "This is a mock function"
+    return result
+```"""
+        elif is_json_request:
             # Return a sample JSON response for extraction tasks
             # In production, this would be replaced by actual model inference
             response_content = """{
