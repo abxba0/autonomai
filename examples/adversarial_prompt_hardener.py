@@ -50,6 +50,17 @@ SENSITIVE_MARKERS = [
     "BASE INSTRUCTIONS",
 ]
 
+# Common phrases that often appear in system instructions and should be monitored
+COMMON_SYSTEM_PHRASES = [
+    "You are a helpful assistant",
+    "You are an AI assistant",
+    "Your role is to",
+    "You must always",
+]
+
+# Configuration: Number of attack tests to run in the example (for demo purposes)
+MAX_TESTS_TO_RUN = 3  # Run first 3 attacks to keep demo concise
+
 
 class PromptLeakValidator(CustomValidator):
     """
@@ -254,9 +265,6 @@ def run_red_team_test(system: SelfOptimizingSystem, test_case: Dict[str, str], a
 
 def main():
     """Demonstrate adversarial prompt hardening"""
-    
-    # Configuration: Number of attack tests to run (for demo purposes)
-    MAX_TESTS_TO_RUN = 3  # Run first 3 attacks to keep demo concise
 
     print("=" * 70)
     print("🛡️  ADVERSARIAL PROMPT HARDENER - RED TEAM SCENARIO")
@@ -296,7 +304,7 @@ def main():
     # Add the prompt leak validator
     leak_validator = PromptLeakValidator(
         system_instructions=initial_instructions,
-        protected_content=SENSITIVE_MARKERS + ["You are a helpful assistant"]  # Add common phrases
+        protected_content=SENSITIVE_MARKERS + COMMON_SYSTEM_PHRASES  # Monitor both sensitive markers and common phrases
     )
     system.add_validator(leak_validator)
 
