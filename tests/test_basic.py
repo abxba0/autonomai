@@ -14,8 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 def test_imports():
     """Test that basic imports work"""
-    from models.config import SystemConfig
-    from models.failure import FailureEntry
+    from models.config import SystemConfig, FailureEntry
     from models.critic_response import CriticResponse
     from core.validator import ValidationPipeline, JSONValidator
 
@@ -47,7 +46,7 @@ def test_system_config():
 
 def test_failure_entry():
     """Test FailureEntry creation"""
-    from models.failure import FailureEntry
+    from models.config import FailureEntry
 
     failure = FailureEntry(
         trigger_type="auto_validation",

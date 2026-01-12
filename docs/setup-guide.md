@@ -52,23 +52,57 @@ venv\Scripts\activate
 
 ### Step 3: Install Dependencies
 
+#### Option A: Minimal Installation (Cloud AI Only)
+
+For basic usage with cloud AI providers only:
+
 ```bash
-# Install all required packages
+# Install core dependencies only
 pip install -r requirements.txt
+# Or install as editable package
+pip install -e .
 ```
 
-### Dependencies Installed
-The following packages will be installed:
+**Core Dependencies Included:**
 - `langchain` - LLM framework
 - `langchain-anthropic` - Anthropic Claude integration
 - `langchain-openai` - OpenAI GPT integration
-- `fastapi` & `uvicorn` - Web API framework
+- `langchain-google-genai` - Google Gemini integration
 - `pydantic` - Data validation
 - `sqlalchemy` - Database ORM
-- `pyjwt` - JWT authentication
-- `bleach` - Input sanitization
-- `redis` - Rate limiting (optional)
+- `python-dotenv` - Environment configuration
 - And more...
+
+#### Option B: Install with Optional Features
+
+Choose additional features based on your needs:
+
+```bash
+# For web API and security features
+pip install -e ".[web]"
+
+# For local AI embeddings and vector database
+pip install -e ".[local]"
+
+# Install everything
+pip install -e ".[all]"
+```
+
+**Optional Dependencies:**
+
+- **Web extras** (`.[web]`):
+  - `fastapi` & `uvicorn` - Web API framework
+  - `pyjwt` - JWT authentication
+  - `bleach` - Input sanitization
+  - `redis` - Distributed rate limiting
+
+- **Local extras** (`.[local]`):
+  - `chromadb` - Vector database for embeddings
+  - `sentence-transformers` - ML models for semantic similarity
+
+**Note:** The system gracefully degrades if optional dependencies are missing:
+- Without `redis`: Falls back to in-memory rate limiting
+- Without `chromadb`/`sentence-transformers`: Falls back to simple text similarity
 
 ### Step 4: Verify Installation
 

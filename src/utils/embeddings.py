@@ -3,14 +3,28 @@ Embeddings module for semantic similarity analysis of failures
 """
 
 from typing import List, Optional, Tuple
-from sentence_transformers import SentenceTransformer
-import chromadb
-from chromadb.config import Settings
+
+# Try to import optional dependencies
+try:
+    from sentence_transformers import SentenceTransformer
+    SENTENCE_TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    SENTENCE_TRANSFORMERS_AVAILABLE = False
+    SentenceTransformer = None
+
+try:
+    import chromadb
+    from chromadb.config import Settings
+    CHROMADB_AVAILABLE = True
+except ImportError:
+    CHROMADB_AVAILABLE = False
+    chromadb = None
+    Settings = None
+
 import os
 from pathlib import Path
 
-from ..models.config import SystemConfig
-from ..models.failure import FailureEntry
+from ..models.config import SystemConfig, FailureEntry
 
 
 class EmbeddingsManager:
@@ -27,6 +41,20 @@ class EmbeddingsManager:
 
     def _initialize_embeddings(self):
         """Initialize embeddings model and vector database"""
+        # Check if dependencies are available
+        if not SENTENCE_TRANSFORMERS_AVAILABLE or not CHROMADB_AVAILABLE:
+            missing = []
+            if not SENTENCE_TRANSFORMERS_AVAILABLE:
+                missing.append("sentence-transformers")
+            if not CHROMADB_AVAILABLE:
+                missing.append("chromadb")
+            
+            print(f"Warning: Optional dependencies not available: {', '.join(missing)}")
+            print("Install with: pip install -e \".[local]\" for local embeddings support")
+            print("Falling back to simple text similarity")
+            self.embeddings_model = None
+            return
+        
         try:
             # Initialize sentence transformer model
             model_name = os.getenv("EMBEDDINGS_MODEL", "all-MiniLM-L6-v2")
