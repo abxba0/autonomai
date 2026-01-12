@@ -111,6 +111,35 @@ python examples/adversarial_prompt_hardener.py
 
 See [ADVERSARIAL_PROMPT_README.md](ADVERSARIAL_PROMPT_README.md) for detailed documentation.
 
+### 6. Self-Healing Code Assistant (`self_healing_code_assistant.py`)
+Demonstrates an AI-powered code assistant that generates Python scripts and automatically improves code quality:
+- Generate Python code from natural language requests
+- Validate syntax using Python's AST parser
+- Check for style issues (indentation, docstrings, line length, etc.)
+- Automatic learning when code fails validation
+- Iterative improvement cycle for better code generation
+
+**Run it:**
+```bash
+python examples/self_healing_code_assistant.py
+```
+
+**Features:**
+- 🧑‍💻 Python code generation from descriptions
+- ✅ Syntax validation using AST parser
+- 🎨 Style checking (tabs, docstrings, line length, except clauses)
+- 🔄 Self-optimization for code quality improvement
+- 📈 Learning from mistakes to write better code
+
+**Why this is valuable:**
+- Real-world need: users want code that actually runs
+- Automated validation catches errors before execution
+- Enforces coding best practices and style guidelines
+- Demonstrates LLMOps patterns for code generation
+- Practical for AI-powered development tools, code completion, and rapid prototyping
+
+See [SELF_HEALING_CODE_README.md](SELF_HEALING_CODE_README.md) for detailed documentation.
+
 ## Getting Started
 
 ### Prerequisites
@@ -157,9 +186,10 @@ If you're new to autonomai, we recommend following this order:
 
 1. **Start with `basic_usage.py`** - Learn the fundamentals
 2. **Explore `multi_provider_usage.py`** - Understand provider options
-3. **Try `hallucination_proof_extractor.py`** - See advanced validation patterns
-4. **Check out `adversarial_prompt_hardener.py`** - Learn security best practices
-5. **Experiment with `terminal_chatbot/`** - See a complete application
+3. **Try `self_healing_code_assistant.py`** - See practical code generation with validation
+4. **Try `hallucination_proof_extractor.py`** - See advanced validation patterns
+5. **Check out `adversarial_prompt_hardener.py`** - Learn security best practices
+6. **Experiment with `terminal_chatbot/`** - See a complete application
 
 ## Creating Your Own Examples
 
