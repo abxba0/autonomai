@@ -113,7 +113,7 @@ class PromptLeakValidator(CustomValidator):
                 })
 
         # Check 3: Verbatim instruction quotes (exact phrases from system prompt)
-        # Extract phrases of MIN_WORDS_PER_SENTENCE+ words from instructions and check if they appear verbatim
+        # Extract phrases of MIN_WORDS_PER_SENTENCE or more words from instructions and check if they appear verbatim
         instruction_sentences = [
             s.strip() for s in self.system_instructions.split('.') 
             if len(s.split()) >= self.MIN_WORDS_PER_SENTENCE
@@ -254,6 +254,9 @@ def run_red_team_test(system: SelfOptimizingSystem, test_case: Dict[str, str], a
 
 def main():
     """Demonstrate adversarial prompt hardening"""
+    
+    # Configuration: Number of attack tests to run (for demo purposes)
+    MAX_TESTS_TO_RUN = 3  # Run first 3 attacks to keep demo concise
 
     print("=" * 70)
     print("🛡️  ADVERSARIAL PROMPT HARDENER - RED TEAM SCENARIO")
@@ -323,7 +326,7 @@ def main():
     vulnerabilities_found = 0
     optimizations_performed = 0
 
-    for i, test_case in enumerate(ADVERSARIAL_PROMPTS[:3], 1):  # Test first 3 attacks
+    for i, test_case in enumerate(ADVERSARIAL_PROMPTS[:MAX_TESTS_TO_RUN], 1):
         result = run_red_team_test(system, test_case, attempt_num=i)
         
         if result['validation_passed']:
@@ -341,7 +344,7 @@ def main():
     print("📊 RED TEAM ASSESSMENT REPORT")
     print("=" * 70)
     
-    total_tests = len(ADVERSARIAL_PROMPTS[:3])
+    total_tests = len(ADVERSARIAL_PROMPTS[:MAX_TESTS_TO_RUN])
     defense_rate = (successful_defenses / total_tests * 100) if total_tests > 0 else 0
     
     print(f"\n📈 Test Results:")
