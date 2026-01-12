@@ -313,8 +313,35 @@ class MockModel:
 
     def invoke(self, messages: List) -> Any:
         """Mock invoke for LangChain compatibility"""
+        
+        # Check if JSON is expected in the prompt
+        prompt_text = ""
+        for msg in messages:
+            if hasattr(msg, 'content'):
+                prompt_text += msg.content.lower()
+        
+        # Determine response content
+        if "json" in prompt_text and any(keyword in prompt_text for keyword in ["extract", "return", "output"]):
+            response_content = """{
+    "invoice_number": "4582-2024",
+    "date": "March 15th, 2024",
+    "customer_name": "John Smith",
+    "customer_email": "j.smith@example.com",
+    "customer_phone": "(555) 123-4567",
+    "item_name": "Widget Pro Model X",
+    "item_price": "$249.99",
+    "quantity": "2",
+    "shipping": "$15.50",
+    "tax": "$43.82",
+    "total_amount": "$559.30",
+    "payment_method": "Credit Card ending in 8742",
+    "tracking_number": "TRK-9384756ABC",
+    "order_status": "SHIPPED"
+}"""
+        else:
+            response_content = "Mock response from test model"
 
         class MockResponse:
-            content = "Mock response from test model"
+            content = response_content
 
         return MockResponse()
