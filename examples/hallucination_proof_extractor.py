@@ -25,6 +25,12 @@ from src import SelfOptimizingSystem, SystemConfig, CustomValidator
 from src.core.validator import ValidationResult
 
 
+# Constants for validation
+MIN_WORD_LENGTH_FOR_MATCHING = 2  # Minimum word length to consider in multi-word validation
+PHONE_MIN_DIGITS = 10  # Minimum number of digits for a valid phone number
+PHONE_MAX_DIGITS = 15  # Maximum number of digits for a valid phone number
+
+
 # Sample messy document for extraction
 MESSY_DOCUMENT = """
 INVOICE #4582-2024
@@ -155,7 +161,7 @@ class GroundingValidator(CustomValidator):
             f"{num:.2f}",
             f"${num:.2f}",
             f"${num:,.2f}",
-            str(int(num)) if num == int(num) else None,
+            str(int(num)) if isinstance(num, float) and num.is_integer() else None,
         ]
 
         for pattern in patterns:
@@ -177,18 +183,25 @@ class GroundingValidator(CustomValidator):
         # For dates, phone numbers, etc.
         words = value_clean.split()
         if len(words) > 1:
-            # For multi-word values, check if all words appear
-            all_words_found = all(word.lower() in self.source_text.lower() for word in words if len(word) > 2)
+            # For multi-word values, check if all significant words appear
+            all_words_found = all(
+                word.lower() in self.source_text.lower() 
+                for word in words 
+                if len(word) > MIN_WORD_LENGTH_FOR_MATCHING
+            )
             if all_words_found:
                 return True
 
-        # Check for phone number variations
-        if re.match(r'^[\d\(\)\-\s]+$', value_clean):
+        # Check for phone number variations with proper constraints
+        # Match strings that look like phone numbers: contain mostly digits and phone formatting chars
+        if re.match(r'^[\d\(\)\-\s\.]+$', value_clean):
             # Extract just digits
             digits = re.sub(r'\D', '', value_clean)
-            source_digits = re.sub(r'\D', '', self.source_text)
-            if digits in source_digits:
-                return True
+            # Validate digit count is within reasonable phone number range
+            if PHONE_MIN_DIGITS <= len(digits) <= PHONE_MAX_DIGITS:
+                source_digits = re.sub(r'\D', '', self.source_text)
+                if digits in source_digits:
+                    return True
 
         return False
 

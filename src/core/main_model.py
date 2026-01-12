@@ -320,8 +320,15 @@ class MockModel:
             if hasattr(msg, 'content'):
                 prompt_text += msg.content.lower()
         
-        # Determine response content
-        if "json" in prompt_text and any(keyword in prompt_text for keyword in ["extract", "return", "output"]):
+        # Determine response content based on prompt analysis
+        # Note: This is a simple heuristic for testing. Real models would use more sophisticated logic.
+        is_json_request = "json" in prompt_text and any(
+            keyword in prompt_text for keyword in ["extract", "return", "output"]
+        )
+        
+        if is_json_request:
+            # Return a sample JSON response for extraction tasks
+            # In production, this would be replaced by actual model inference
             response_content = """{
     "invoice_number": "4582-2024",
     "date": "March 15th, 2024",
