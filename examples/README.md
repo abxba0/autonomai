@@ -83,6 +83,34 @@ python examples/hallucination_proof_extractor.py
 - Demonstrates learning cycle for improving accuracy
 - Practical for invoice processing, document analysis, and data extraction tasks
 
+### 5. Adversarial Prompt Hardener (`adversarial_prompt_hardener.py`)
+Demonstrates a "Red Team" security scenario where the system defends against jailbreak attempts:
+- Detect prompt injection and instruction leakage attempts
+- Validate that system prompts remain hidden
+- Automatic hardening when security vulnerabilities are found
+- Iterative defense: each cycle blocks broader attack classes
+
+**Run it:**
+```bash
+python examples/adversarial_prompt_hardener.py
+```
+
+**Features:**
+- 🛡️ Jailbreak attempt detection
+- 🔒 System prompt protection
+- 🔄 Self-hardening security defenses
+- 🎯 Red team attack simulation
+- 📊 Security assessment reporting
+
+**Why this is valuable:**
+- Demonstrates security-readiness for enterprise deployment
+- Protects proprietary prompts and business logic
+- Continually strengthens defenses against adversarial users
+- Useful for prompt engineers, security teams, and AI safety researchers
+- Essential for customer-facing AI systems with sensitive instructions
+
+See [ADVERSARIAL_PROMPT_README.md](ADVERSARIAL_PROMPT_README.md) for detailed documentation.
+
 ## Getting Started
 
 ### Prerequisites
@@ -130,7 +158,8 @@ If you're new to autonomai, we recommend following this order:
 1. **Start with `basic_usage.py`** - Learn the fundamentals
 2. **Explore `multi_provider_usage.py`** - Understand provider options
 3. **Try `hallucination_proof_extractor.py`** - See advanced validation patterns
-4. **Experiment with `terminal_chatbot/`** - See a complete application
+4. **Check out `adversarial_prompt_hardener.py`** - Learn security best practices
+5. **Experiment with `terminal_chatbot/`** - See a complete application
 
 ## Creating Your Own Examples
 
