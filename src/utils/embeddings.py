@@ -24,8 +24,7 @@ except ImportError:
 import os
 from pathlib import Path
 
-from ..models.config import SystemConfig
-from ..models.failure import FailureEntry
+from ..models.config import SystemConfig, FailureEntry
 
 
 class EmbeddingsManager:
