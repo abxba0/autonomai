@@ -35,7 +35,7 @@ def test_embeddings_without_optional_deps():
         
         # Test creating a failure entry
         failure = FailureEntry(
-            trigger_type="validation",
+            trigger_type="auto_validation",
             failure_description="Test failure",
             severity="low"
         )
@@ -56,7 +56,6 @@ def test_rate_limit_without_redis():
     print("\n=== Testing Rate Limit Module ===")
     
     # Import directly from rate_limit module to avoid importing fastapi dependencies from __init__
-    import sys
     import importlib.util
     
     # Load the rate_limit module directly

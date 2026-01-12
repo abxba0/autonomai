@@ -404,16 +404,14 @@ def check_rate_limit(
     rate_limiter: RateLimiter, client_id: str, endpoint: Optional[str] = None
 ):
     """FastAPI dependency for rate limiting"""
-    if not FASTAPI_AVAILABLE:
-        # If FastAPI is not available, just check and return headers
-        allowed, headers = rate_limiter.check_rate_limit(client_id, endpoint)
-        if not allowed:
-            raise RuntimeError("Rate limit exceeded")
-        return headers
-    
     allowed, headers = rate_limiter.check_rate_limit(client_id, endpoint)
-
+    
     if not allowed:
+        if not FASTAPI_AVAILABLE:
+            # If FastAPI is not available, return a dict with error info
+            # This allows calling code to handle the error appropriately
+            return {"error": "Rate limit exceeded", "allowed": False, "headers": headers}
+        
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Rate limit exceeded",
