@@ -8,6 +8,9 @@ from .auth import (
     Permission,
     authenticate_user,
     create_access_token,
+    create_refresh_token,
+    verify_token,
+    get_user,
     get_current_user,
     require_permission,
 )
@@ -16,13 +19,30 @@ from .validation import (
     validate_input,
     InputValidator,
     SecurityValidator,
+    SecurityConfig,
 )
-from .rate_limit import RateLimiter, APIKeyManager, check_rate_limit, validate_api_key
+from .rate_limit import (
+    RateLimiter,
+    APIKeyManager,
+    RateLimitConfig,
+    check_rate_limit,
+    validate_api_key,
+)
 from .audit import (
     AuditLogger,
+    AuditEventType,
+    AuditSeverity,
     SecurityMonitor,
     log_security_event,
     monitor_suspicious_activity,
+)
+from .gdpr import (
+    GDPRCompliance,
+    ConsentPurpose,
+    ConsentRecord,
+    DataAccessRequest,
+    DataDeletionRequest,
+    DataExportFormat,
 )
 
 __all__ = [
@@ -32,6 +52,9 @@ __all__ = [
     "Permission",
     "authenticate_user",
     "create_access_token",
+    "create_refresh_token",
+    "verify_token",
+    "get_user",
     "get_current_user",
     "require_permission",
     # Input validation
@@ -39,14 +62,25 @@ __all__ = [
     "validate_input",
     "InputValidator",
     "SecurityValidator",
+    "SecurityConfig",
     # Rate limiting
     "RateLimiter",
     "APIKeyManager",
+    "RateLimitConfig",
     "check_rate_limit",
     "validate_api_key",
     # Audit logging
     "AuditLogger",
+    "AuditEventType",
+    "AuditSeverity",
     "SecurityMonitor",
     "log_security_event",
     "monitor_suspicious_activity",
+    # GDPR Compliance
+    "GDPRCompliance",
+    "ConsentPurpose",
+    "ConsentRecord",
+    "DataAccessRequest",
+    "DataDeletionRequest",
+    "DataExportFormat",
 ]
