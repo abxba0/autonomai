@@ -451,11 +451,48 @@ The system now includes comprehensive security features:
 - **Real-time alerts** for security events
 - **Security reports** with recommendations
 
+#### **UK GDPR Compliance** ✨ NEW
+- **Complete implementation** of UK GDPR and Data Protection Act 2018
+- **User Rights API**: Access, erasure, portability, rectification
+- **Consent Management**: Track and manage user consents
+- **Data Protection**: Encryption, minimization, retention policies
+- **Third-Party Compliance**: AI provider data processing agreements
+- **Comprehensive Documentation**: Privacy policy and compliance guides
+
 #### **Secure Web API**
 - **Protected endpoints** requiring authentication
 - **CORS configuration** with allowed origins
 - **Security middleware** for request logging
 - **Admin endpoints** for security management
+
+### UK GDPR Compliance
+
+The system is fully compliant with UK data protection regulations:
+
+**User Rights Implementation:**
+- Right to Access (Article 15) - `/gdpr/access` and `/gdpr/export`
+- Right to Erasure (Article 17) - `/gdpr/delete`
+- Right to Data Portability (Article 20) - `/gdpr/export`
+- Right to Rectification (Article 16) - `/gdpr/rectify`
+- Consent Management - `/gdpr/consent/*`
+
+**Data Protection Measures:**
+- Encryption in transit (TLS 1.3) and at rest
+- Secure password hashing (bcrypt/argon2)
+- Comprehensive audit logging (7-year retention)
+- Automated data retention and deletion
+- Privacy by design and by default
+
+**Documentation:**
+- [UK GDPR Compliance Guide](docs/uk-gdpr-compliance.md)
+- [Privacy Policy](docs/PRIVACY_POLICY.md)
+- [Security Guide](docs/security.md)
+
+**Third-Party Data Processors:**
+- Anthropic Claude, OpenAI, Google Gemini, Deepseek, Openrouter
+- Data Processing Agreements required
+- International transfer safeguards
+- User control over provider selection
 
 ### Security Configuration
 ```python
@@ -490,14 +527,14 @@ python api.py
 
 1. **Multi-tenant Support**: Tenant isolation and data separation
 2. **Advanced Security**: Two-factor authentication, IP whitelisting
-3. **Compliance Features**: GDPR tools, data retention policies
-4. **Integration Features**: SSO support, OAuth2/OIDC integration
-5. **Additional Providers**: Support for more AI providers (Cohere, AI21, etc.)
-6. **Embedding Support**: Enhanced semantic similarity for failure analysis
-7. **Database Backend**: Replace file storage with database
-8. **Web Interface**: Add dashboard for monitoring and manual review
-9. **Advanced Model Routing**: Automatic model selection based on task type
-10. **Batch Processing**: Optimize multiple failures simultaneously
+3. **Integration Features**: SSO support, OAuth2/OIDC integration
+4. **Additional Providers**: Support for more AI providers (Cohere, AI21, etc.)
+5. **Embedding Support**: Enhanced semantic similarity for failure analysis
+6. **Database Backend**: Replace file storage with database
+7. **Web Interface**: Add dashboard for monitoring and manual review
+8. **Advanced Model Routing**: Automatic model selection based on task type
+9. **Batch Processing**: Optimize multiple failures simultaneously
+10. **Automated Compliance Reporting**: Generate compliance reports for auditors
 
 ## License
 
