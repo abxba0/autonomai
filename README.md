@@ -1,15 +1,43 @@
 # Self-Optimizing Instruction Library
 
-A LangChain-based system that learns from failures and automatically improves its own instructions through a critic-actor architecture. Now with enterprise-grade security features including authentication, authorization, rate limiting, and audit logging.
+A LangChain-based system that learns from failures and automatically improves its own instructions through a critic-actor architecture. Now with enterprise-grade security features, implicit negative feedback detection, and context-based rule extraction.
 
 ## Overview
 
 This system implements a self-optimizing AI assistant that:
 1. **Executes** user queries using current instructions (Actor/Main Model)
 2. **Validates** outputs against configurable rules
-3. **Learns** from failures by analyzing what went wrong
-4. **Optimizes** its own instruction set to prevent similar failures
-5. **Maintains** version history for rollback and audit
+3. **Detects** implicit corrections and dissatisfaction automatically
+4. **Learns** from failures by analyzing what went wrong
+5. **Extracts** rules from conversation patterns and user feedback
+6. **Optimizes** its own instruction set to prevent similar failures
+7. **Maintains** version history for rollback and audit
+
+## Key Features
+
+### 🔄 Automatic Optimization
+- Learns from validation failures
+- Proposes instruction updates via Critic model
+- Maintains safety by checking for conflicts
+- Version-controlled changes with rollback capability
+
+### 🎯 Implicit Negative Feedback Detection
+- **NEW**: Automatically detects when users correct the AI or express dissatisfaction
+- Recognizes patterns like "No, that's not right", "That doesn't help", etc.
+- Triggers optimization pipeline without explicit feedback commands
+- Configurable confidence thresholds
+
+### 📊 Context-Based Rule Extraction
+- **NEW**: `/feedback-context` command analyzes conversation history
+- Extracts both positive ("DO") and negative ("DON'T") rules
+- Identifies user preferences and recurring patterns
+- Available in terminal chatbot and web API
+
+### ✅ Custom Validators
+- JSON validation with required fields
+- Length validation (min/max)
+- Regex pattern matching
+- Custom validation functions
 
 ## Architecture
 
@@ -17,14 +45,16 @@ This system implements a self-optimizing AI assistant that:
 
 1. **MainModel (Actor)**: Executes user queries with current instructions
 2. **CriticModel (Optimizer)**: Analyzes failures and proposes instruction updates
-3. **InstructionManager**: Manages instruction files and version control
-4. **ValidationPipeline**: Validates model outputs against configurable rules
-5. **VersionController**: Maintains history of instruction changes
+3. **CorrectionDetector**: Detects implicit corrections in user messages
+4. **ContextAnalyzer**: Extracts rules from conversation patterns
+5. **InstructionManager**: Manages instruction files and version control
+6. **ValidationPipeline**: Validates model outputs against configurable rules
+7. **VersionController**: Maintains history of instruction changes
 
 ### Data Models
 
 - `SystemConfig`: Configuration for the entire system
-- `FailureEntry`: Represents a single failure with metadata
+- `FailureEntry`: Represents a single failure with metadata (supports `implicit_feedback` trigger)
 - `CriticResponse`: Structured output from the Critic model
 - `VersionMetadata`: Tracks changes and version history
 
@@ -69,8 +99,10 @@ The system gracefully falls back to simpler alternatives if optional dependencie
 
 ## Quick Start
 
+### Basic Usage
+
 ```python
-from self_optimizing_system import SelfOptimizingSystem, JSONValidator, LengthValidator
+from src import SelfOptimizingSystem, JSONValidator, LengthValidator
 
 # Initialize system
 system = SelfOptimizingSystem()
@@ -88,6 +120,52 @@ print(f"Validation passed: {result['validation_passed']}")
 # If validation failed, system automatically learns from it
 if not result['validation_passed'] and result.get('optimization_attempted'):
     print("System learned from failure and updated instructions!")
+```
+
+### Using Implicit Correction Detection
+
+```python
+from src import SelfOptimizingSystem, SystemConfig
+
+# Enable correction detection
+config = SystemConfig(
+    enable_correction_detection=True,
+    enable_auto_optimization=True
+)
+system = SelfOptimizingSystem(config)
+
+# User interacts normally
+result = system.execute("What is 2+2?")
+# ... bot responds ...
+
+# User implicitly corrects (automatically detected!)
+result = system.execute("No, that's not right")
+
+if result.get("correction_detected"):
+    print(f"Correction detected! Confidence: {result['correction_confidence']:.2f}")
+    print("System is learning from your feedback...")
+```
+
+### Using Context-Based Rule Extraction
+
+```python
+# After a conversation...
+conversation_history = [
+    {"role": "user", "content": "I prefer concise answers"},
+    {"role": "assistant", "content": "Understood."},
+    {"role": "user", "content": "Don't use technical jargon"},
+    {"role": "assistant", "content": "Got it."},
+]
+
+# Analyze and extract rules
+result = system.analyze_feedback_context(
+    conversation_history,
+    auto_apply=True  # Automatically apply extracted rules
+)
+
+print(f"Extracted {result['rules_count']} positive rules")
+print(f"Extracted {result['dont_rules_count']} negative rules")
+print(result['formatted_display'])  # Show detailed analysis
 ```
 
 ## Features
@@ -119,7 +197,7 @@ if not result['validation_passed'] and result.get('optimization_attempted'):
 ## Configuration
 
 ```python
-from self_optimizing_system import SystemConfig
+from src import SystemConfig
 from pathlib import Path
 
 config = SystemConfig(
@@ -132,6 +210,10 @@ config = SystemConfig(
     # Optimization controls
     max_optimization_attempts=3,
     enable_auto_optimization=True,
+    
+    # Implicit feedback / correction detection
+    enable_correction_detection=True,
+    correction_detection_confidence_threshold=0.7,
     
     # Failure management
     max_failure_log_size=50,
