@@ -44,7 +44,9 @@ def main():
         enable_confidence_throttling=True,
         confidence_threshold=0.7,
         
-        # Use mock models for demo
+        # Use mock models for demo (replace with real models in production)
+        # For real models, set: main_model="claude-3-5-sonnet-20241022"
+        # and ensure ANTHROPIC_API_KEY is set in environment
         main_model="mock-gpt-4",
         critic_model="mock-claude-3",
     )

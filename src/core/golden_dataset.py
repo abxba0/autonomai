@@ -308,8 +308,13 @@ class GoldenDataset:
         except Exception as e:
             print(f"Error saving golden dataset: {e}")
     
-    def export_to_markdown(self) -> str:
-        """Export dataset to markdown format for review"""
+    def export_to_markdown(self, output_truncate_length: int = 200) -> str:
+        """
+        Export dataset to markdown format for review
+        
+        Args:
+            output_truncate_length: Maximum length for output display (default: 200)
+        """
         md = f"# Golden Dataset\n\n"
         md += f"Total interactions: {len(self.interactions)}\n\n"
         md += f"Last updated: {datetime.now().isoformat()}\n\n"
@@ -319,7 +324,13 @@ class GoldenDataset:
             md += f"## Interaction {i}: {interaction.id}\n\n"
             md += f"**Timestamp**: {interaction.timestamp}\n\n"
             md += f"**Query**: {interaction.user_query}\n\n"
-            md += f"**Expected Output**:\n```\n{interaction.expected_output[:200]}...\n```\n\n"
+            
+            # Truncate output for display
+            output = interaction.expected_output
+            if len(output) > output_truncate_length:
+                output = output[:output_truncate_length] + "..."
+            md += f"**Expected Output**:\n```\n{output}\n```\n\n"
+            
             md += f"**Version**: {interaction.instructions_version}\n\n"
             md += f"**Success Count**: {interaction.success_count}\n\n"
             if interaction.tags:

@@ -311,26 +311,25 @@ class MainModel:
         self.last_response = output
         
         # Phase 3: Add successful interactions to golden dataset
-        if (validation_passed and 
-            not correction_detected and 
+        if (validation_passed and not correction_detected and 
             self.config.enable_regression_testing and 
-            self.instruction_manager.golden_dataset):
+            self.instruction_manager.golden_dataset and
+            self.validation_pipeline.validators):
             
             # Only add interactions that had validators and passed
-            if self.validation_pipeline.validators:
-                try:
-                    validation_rules = [v.__class__.__name__ for v in self.validation_pipeline.validators]
-                    self.instruction_manager.golden_dataset.add_interaction(
-                        user_query=user_query,
-                        output=output,
-                        instructions_version=self.instruction_manager.current_version or "unknown",
-                        model_used=self.config.main_model,
-                        validation_rules=validation_rules,
-                        tags=["auto_collected"]
-                    )
-                except Exception as e:
-                    # Don't fail if golden dataset collection fails
-                    print(f"Warning: Could not add to golden dataset: {e}")
+            try:
+                validation_rules = [v.__class__.__name__ for v in self.validation_pipeline.validators]
+                self.instruction_manager.golden_dataset.add_interaction(
+                    user_query=user_query,
+                    output=output,
+                    instructions_version=self.instruction_manager.current_version or "unknown",
+                    model_used=self.config.main_model,
+                    validation_rules=validation_rules,
+                    tags=["auto_collected"]
+                )
+            except Exception as e:
+                # Don't fail if golden dataset collection fails
+                print(f"Warning: Could not add to golden dataset: {e}")
 
         return {
             "output": output,

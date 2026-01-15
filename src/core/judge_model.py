@@ -202,6 +202,7 @@ class JudgeModel:
         api_key = os.getenv("OPENROUTER_API_KEY")
         
         if not api_key:
+            print(f"Warning: OPENROUTER_API_KEY not found. Using mock judge model.")
             return MockJudgeModel(self.config.critic_model, self.config.temperature_critic)
         
         return ChatOpenAI(
