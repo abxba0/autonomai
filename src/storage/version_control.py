@@ -28,7 +28,8 @@ class VersionController:
         try:
             with open(self.metadata_file, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except Exception:
+        except (FileNotFoundError, json.JSONDecodeError, IOError) as e:
+            print(f"Error loading metadata from {self.metadata_file}: {e}")
             return []
 
     def _save_metadata(self):
@@ -56,7 +57,7 @@ class VersionController:
 
             return True
 
-        except Exception as e:
+        except (IOError, OSError, json.JSONDecodeError) as e:
             print(f"Error creating version: {e}")
             return False
 
@@ -128,7 +129,7 @@ class VersionController:
                 dynamic_appendix=dynamic_appendix,
             )
 
-        except Exception as e:
+        except (IOError, OSError, KeyError, IndexError) as e:
             print(f"Error loading version {version_id}: {e}")
             return None
 

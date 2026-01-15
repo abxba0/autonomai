@@ -100,9 +100,9 @@ class DatabaseManager:
             # Create engine
             self.engine = create_engine(
                 database_url,
-                connect_args={"check_same_thread": False}
-                if "sqlite" in database_url
-                else {},
+                connect_args=(
+                    {"check_same_thread": False} if "sqlite" in database_url else {}
+                ),
             )
 
             # Create tables

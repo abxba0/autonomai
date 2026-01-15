@@ -7,13 +7,13 @@ import sys
 import os
 
 # Add src directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 print("Testing imports...")
 
 # Test individual modules directly (avoid importing src.__init__)
 try:
-    from models.config import SystemConfig
+    from src.models.config import SystemConfig
 
     print("✓ SystemConfig imported")
 
@@ -23,7 +23,7 @@ except Exception as e:
     print(f"✗ SystemConfig failed: {e}")
 
 try:
-    from models.critic_response import CriticResponse
+    from src.models.critic_response import CriticResponse
 
     print("✓ CriticResponse imported")
 
@@ -40,7 +40,7 @@ except Exception as e:
     print(f"✗ CriticResponse failed: {e}")
 
 try:
-    from models.version import VersionMetadata
+    from src.models.version import VersionMetadata
 
     print("✓ VersionMetadata imported")
 
@@ -52,7 +52,7 @@ except Exception as e:
     print(f"✗ VersionMetadata failed: {e}")
 
 try:
-    from core.validator import JSONValidator, LengthValidator
+    from src.core.validator import JSONValidator, LengthValidator
 
     print("✓ Validators imported")
 

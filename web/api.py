@@ -186,7 +186,7 @@ async def analyze_feedback_context(
 ):
     """
     Analyze conversation context to extract rules and patterns
-    
+
     This endpoint processes the conversation history to automatically detect
     user preferences, desired behaviors, and patterns, then proposes new
     rules (both positive "DO" rules and negative "DON'T" rules).
@@ -196,15 +196,14 @@ async def analyze_feedback_context(
             conversation_history=request.conversation_history,
             focus_recent=request.focus_recent,
             min_confidence=request.min_confidence,
-            auto_apply=request.auto_apply
+            auto_apply=request.auto_apply,
         )
-        
+
         if not result.get("success"):
             raise HTTPException(
-                status_code=400,
-                detail=result.get("message", "Context analysis failed")
+                status_code=400, detail=result.get("message", "Context analysis failed")
             )
-        
+
         return FeedbackContextResponse(
             success=result["success"],
             message=result.get("analysis", {}).get("message"),
@@ -213,16 +212,13 @@ async def analyze_feedback_context(
             patterns_count=result.get("patterns_count", 0),
             formatted_display=result.get("formatted_display"),
             instruction_updates=result.get("instruction_updates"),
-            auto_apply_result=result.get("auto_apply_result")
+            auto_apply_result=result.get("auto_apply_result"),
         )
-    
+
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Context analysis error: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Context analysis error: {str(e)}")
 
 
 @app.get("/status", response_model=SystemStatus)
@@ -296,12 +292,12 @@ async def rollback_version(
         success = system.rollback(steps)
         return {
             "success": success,
-            "message": f"Rolled back {steps} versions"
-            if success
-            else "Rollback failed",
-            "current_version": system.instruction_manager.current_version
-            if success
-            else None,
+            "message": (
+                f"Rolled back {steps} versions" if success else "Rollback failed"
+            ),
+            "current_version": (
+                system.instruction_manager.current_version if success else None
+            ),
         }
 
     except Exception as e:

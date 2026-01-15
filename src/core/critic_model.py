@@ -32,23 +32,24 @@ class CriticModel:
 
         # System prompt for Critic
         self.system_prompt = self._build_system_prompt()
-        
+
         # Initialize embeddings manager for semantic de-duplication
         self.embeddings_manager = None
         if self.config.enable_semantic_deduplication:
             try:
                 self.embeddings_manager = EmbeddingsManager(self.config)
             except Exception as e:
-                print(f"Warning: Could not initialize embeddings for de-duplication: {e}")
+                print(
+                    f"Warning: Could not initialize embeddings for de-duplication: {e}"
+                )
                 self.embeddings_manager = None
-        
+
         # Initialize Judge model for consensus validation (Phase 2)
         self.judge_model = None
         if self.config.enable_judge_model:
             try:
                 self.judge_model = JudgeModel(
-                    self.config,
-                    self.instruction_manager.base_instructions
+                    self.config, self.instruction_manager.base_instructions
                 )
                 print("✓ Judge model initialized for consensus validation")
             except Exception as e:
@@ -58,7 +59,11 @@ class CriticModel:
     def _initialize_model(self):
         """Initialize the critic model with LangChain"""
         model_name = self.config.critic_model.lower()
-        provider = self.config.critic_model_provider.lower() if self.config.critic_model_provider else None
+        provider = (
+            self.config.critic_model_provider.lower()
+            if self.config.critic_model_provider
+            else None
+        )
 
         # Detect provider from model name if not explicitly set
         if not provider:
@@ -79,7 +84,9 @@ class CriticModel:
             # Fallback to mock model for testing
             print(f"Warning: Using mock model for {self.config.critic_model}")
             print("Set appropriate API key environment variable for real LLM")
-            return MockCriticModel(self.config.critic_model, self.config.temperature_critic)
+            return MockCriticModel(
+                self.config.critic_model, self.config.temperature_critic
+            )
 
     def _detect_provider(self, model_name: str) -> str:
         """Auto-detect provider from model name"""
@@ -100,13 +107,19 @@ class CriticModel:
         try:
             from langchain_anthropic import ChatAnthropic
         except ImportError:
-            print("Warning: langchain-anthropic not installed. Install with: pip install langchain-anthropic")
-            return MockCriticModel(self.config.critic_model, self.config.temperature_critic)
+            print(
+                "Warning: langchain-anthropic not installed. Install with: pip install langchain-anthropic"
+            )
+            return MockCriticModel(
+                self.config.critic_model, self.config.temperature_critic
+            )
 
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
             print("Warning: ANTHROPIC_API_KEY not found. Using mock model.")
-            return MockCriticModel(self.config.critic_model, self.config.temperature_critic)
+            return MockCriticModel(
+                self.config.critic_model, self.config.temperature_critic
+            )
 
         return ChatAnthropic(
             model=self.config.critic_model,
@@ -119,13 +132,19 @@ class CriticModel:
         try:
             from langchain_openai import ChatOpenAI
         except ImportError:
-            print("Warning: langchain-openai not installed. Install with: pip install langchain-openai")
-            return MockCriticModel(self.config.critic_model, self.config.temperature_critic)
+            print(
+                "Warning: langchain-openai not installed. Install with: pip install langchain-openai"
+            )
+            return MockCriticModel(
+                self.config.critic_model, self.config.temperature_critic
+            )
 
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             print("Warning: OPENAI_API_KEY not found. Using mock model.")
-            return MockCriticModel(self.config.critic_model, self.config.temperature_critic)
+            return MockCriticModel(
+                self.config.critic_model, self.config.temperature_critic
+            )
 
         return ChatOpenAI(
             model=self.config.critic_model,
@@ -138,13 +157,19 @@ class CriticModel:
         try:
             from langchain_google_genai import ChatGoogleGenerativeAI
         except ImportError:
-            print("Warning: langchain-google-genai not installed. Install with: pip install langchain-google-genai")
-            return MockCriticModel(self.config.critic_model, self.config.temperature_critic)
+            print(
+                "Warning: langchain-google-genai not installed. Install with: pip install langchain-google-genai"
+            )
+            return MockCriticModel(
+                self.config.critic_model, self.config.temperature_critic
+            )
 
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
             print("Warning: GOOGLE_API_KEY not found. Using mock model.")
-            return MockCriticModel(self.config.critic_model, self.config.temperature_critic)
+            return MockCriticModel(
+                self.config.critic_model, self.config.temperature_critic
+            )
 
         return ChatGoogleGenerativeAI(
             model=self.config.critic_model,
@@ -157,15 +182,21 @@ class CriticModel:
         try:
             from langchain_openai import ChatOpenAI
         except ImportError:
-            print("Warning: langchain-openai not installed. Install with: pip install langchain-openai")
-            return MockCriticModel(self.config.critic_model, self.config.temperature_critic)
+            print(
+                "Warning: langchain-openai not installed. Install with: pip install langchain-openai"
+            )
+            return MockCriticModel(
+                self.config.critic_model, self.config.temperature_critic
+            )
 
         api_key = os.getenv("DEEPSEEK_API_KEY")
         base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
-        
+
         if not api_key:
             print("Warning: DEEPSEEK_API_KEY not found. Using mock model.")
-            return MockCriticModel(self.config.critic_model, self.config.temperature_critic)
+            return MockCriticModel(
+                self.config.critic_model, self.config.temperature_critic
+            )
 
         return ChatOpenAI(
             model=self.config.critic_model,
@@ -179,14 +210,20 @@ class CriticModel:
         try:
             from langchain_openai import ChatOpenAI
         except ImportError:
-            print("Warning: langchain-openai not installed. Install with: pip install langchain-openai")
-            return MockCriticModel(self.config.critic_model, self.config.temperature_critic)
+            print(
+                "Warning: langchain-openai not installed. Install with: pip install langchain-openai"
+            )
+            return MockCriticModel(
+                self.config.critic_model, self.config.temperature_critic
+            )
 
         api_key = os.getenv("OPENROUTER_API_KEY")
-        
+
         if not api_key:
             print("Warning: OPENROUTER_API_KEY not found. Using mock model.")
-            return MockCriticModel(self.config.critic_model, self.config.temperature_critic)
+            return MockCriticModel(
+                self.config.critic_model, self.config.temperature_critic
+            )
 
         return ChatOpenAI(
             model=self.config.critic_model,
@@ -328,92 +365,111 @@ class CriticModel:
         self, critic_response: CriticResponse, failure: FailureEntry
     ) -> bool:
         """Apply the critic's proposed changes"""
-        
+
         # Phase 4: Confidence-Based Throttling
         if self.config.enable_confidence_throttling:
             if critic_response.confidence_score < self.config.confidence_threshold:
-                print(f"⚠ Confidence too low ({critic_response.confidence_score:.2f} < {self.config.confidence_threshold})")
-                print(f"  Moving to pending review for human evaluation")
-                
+                print(
+                    f"⚠ Confidence too low ({critic_response.confidence_score:.2f} < {self.config.confidence_threshold})"
+                )
+                print("  Moving to pending review for human evaluation")
+
                 # Add to pending review with confidence info
                 self.instruction_manager.add_to_pending_review(
                     failure,
                     f"Low confidence score ({critic_response.confidence_score:.2f})\n\n"
                     f"Proposed change:\n{critic_response.proposed_appendix_update}\n\n"
-                    f"Reasoning: {critic_response.impact_analysis}"
+                    f"Reasoning: {critic_response.impact_analysis}",
                 )
-                
+
                 failure.optimization_attempted = True
                 failure.optimization_successful = False
-                failure.resolution_notes = f"Low confidence - pending human review"
+                failure.resolution_notes = "Low confidence - pending human review"
                 return False
-        
+
         # Phase 1: Semantic De-duplication Check
         if self.config.enable_semantic_deduplication and self.embeddings_manager:
             is_duplicate, similar_rule = self._check_semantic_duplicate(
                 critic_response.proposed_appendix_update
             )
             if is_duplicate:
-                print(f"✓ Semantic de-duplication: Skipping duplicate rule (similarity to existing rule)")
+                print(
+                    "✓ Semantic de-duplication: Skipping duplicate rule (similarity to existing rule)"
+                )
                 print(f"  Existing rule: {similar_rule[:100]}...")
                 # Still mark as successful optimization but don't add duplicate
                 failure.optimization_attempted = True
                 failure.optimization_successful = True
-                failure.resolution_notes = f"Rule already exists (semantic similarity detected)"
+                failure.resolution_notes = (
+                    "Rule already exists (semantic similarity detected)"
+                )
                 return True
-        
+
         # Phase 2: Judge Model Consensus Validation
-        if self.config.enable_judge_model and self.judge_model and self.config.judge_approval_required:
+        if (
+            self.config.enable_judge_model
+            and self.judge_model
+            and self.config.judge_approval_required
+        ):
             judge_response = self.judge_model.review_proposal(
                 critic_response,
                 self.instruction_manager.dynamic_appendix,
-                failure.to_markdown(detail_level="full")
+                failure.to_markdown(detail_level="full"),
             )
-            
+
             if not judge_response.approved:
                 print(f"✗ Judge rejected proposal: {judge_response.reasoning}")
                 if judge_response.suggestions:
                     print(f"  Suggestions: {judge_response.suggestions}")
-                
+
                 # Add to pending review with Judge's feedback
                 self.instruction_manager.add_to_pending_review(
                     failure,
-                    f"Judge rejected: {judge_response.reasoning}\n\nSuggestions: {judge_response.suggestions or 'None'}"
+                    f"Judge rejected: {judge_response.reasoning}\n\nSuggestions: {judge_response.suggestions or 'None'}",
                 )
-                
+
                 failure.optimization_attempted = True
                 failure.optimization_successful = False
                 failure.resolution_notes = f"Judge rejected: {judge_response.reasoning}"
                 return False
             else:
-                print(f"✓ Judge approved proposal (confidence: {judge_response.confidence_score:.2f})")
+                print(
+                    f"✓ Judge approved proposal (confidence: {judge_response.confidence_score:.2f})"
+                )
                 print(f"  Reasoning: {judge_response.reasoning[:100]}...")
-        
+
         # Phase 3: Automated Regression Testing
-        if self.config.enable_regression_testing and self.instruction_manager.golden_dataset:
+        if (
+            self.config.enable_regression_testing
+            and self.instruction_manager.golden_dataset
+        ):
             # Temporarily apply the change to test it
-            temp_appendix = self._build_updated_appendix(
+            temp_appendix = self._build_updated_appendix(  # noqa: F841
                 critic_response, self.instruction_manager.dynamic_appendix
             )
-            
+
             # Create a test function that uses the temporary appendix
             def test_with_new_instructions(query: str) -> str:
                 # This is a simplified test - in production, you'd want to
                 # actually run the MainModel with the new instructions
                 # For now, we just return a placeholder
                 return f"Test output for: {query}"
-            
+
             # Run regression tests
-            regression_results = self.instruction_manager.golden_dataset.run_regression_tests(
-                test_with_new_instructions,
-                sample_size=self.config.regression_test_sample_size
+            regression_results = (
+                self.instruction_manager.golden_dataset.run_regression_tests(
+                    test_with_new_instructions,
+                    sample_size=self.config.regression_test_sample_size,
+                )
             )
-            
+
             # Check if regression tests passed
             if regression_results["pass_rate"] < self.config.regression_pass_threshold:
-                print(f"✗ Regression tests failed: {regression_results['pass_rate']*100:.1f}% pass rate")
+                print(
+                    f"✗ Regression tests failed: {regression_results['pass_rate']*100:.1f}% pass rate"
+                )
                 print(f"  Required: {self.config.regression_pass_threshold*100:.1f}%")
-                
+
                 # Add to pending review with regression test details
                 self.instruction_manager.add_to_pending_review(
                     failure,
@@ -421,15 +477,17 @@ class CriticModel:
                     f"Pass rate: {regression_results['pass_rate']*100:.1f}%\n"
                     f"Passed: {regression_results['passed']}/{regression_results['total']}\n\n"
                     f"Proposed change:\n{critic_response.proposed_appendix_update}\n\n"
-                    f"This change may break existing functionality."
+                    f"This change may break existing functionality.",
                 )
-                
+
                 failure.optimization_attempted = True
                 failure.optimization_successful = False
-                failure.resolution_notes = f"Regression tests failed - pending review"
+                failure.resolution_notes = "Regression tests failed - pending review"
                 return False
             else:
-                print(f"✓ Regression tests passed: {regression_results['pass_rate']*100:.1f}% ({regression_results['passed']}/{regression_results['total']})")
+                print(
+                    f"✓ Regression tests passed: {regression_results['pass_rate']*100:.1f}% ({regression_results['passed']}/{regression_results['total']})"
+                )
 
         # Build new appendix
         new_appendix = self._build_updated_appendix(
@@ -453,57 +511,59 @@ class CriticModel:
         )
 
         return success
-    
-    def _check_semantic_duplicate(self, proposed_rule: str) -> tuple[bool, Optional[str]]:
+
+    def _check_semantic_duplicate(
+        self, proposed_rule: str
+    ) -> tuple[bool, Optional[str]]:
         """
         Check if proposed rule is semantically similar to existing rules
-        
+
         Returns:
             Tuple of (is_duplicate, similar_rule_text)
         """
         if not self.embeddings_manager or not self.embeddings_manager.embeddings_model:
             return False, None
-        
+
         try:
             # Get embedding for proposed rule
             proposed_embedding = self.embeddings_manager.get_embedding(proposed_rule)
             if not proposed_embedding:
                 return False, None
-            
+
             # Extract existing rules from dynamic appendix
             existing_rules = self._extract_rules_from_appendix(
                 self.instruction_manager.dynamic_appendix
             )
-            
+
             # Check similarity against each existing rule
             for rule_text in existing_rules:
                 rule_embedding = self.embeddings_manager.get_embedding(rule_text)
                 if not rule_embedding:
                     continue
-                
+
                 # Calculate cosine similarity
                 similarity = self._cosine_similarity(proposed_embedding, rule_embedding)
-                
+
                 if similarity >= self.config.rule_similarity_threshold:
                     return True, rule_text
-            
+
             return False, None
-            
+
         except Exception as e:
             print(f"Warning: Error checking semantic duplicate: {e}")
             return False, None
-    
+
     def _extract_rules_from_appendix(self, appendix: str) -> List[str]:
         """
         Extract individual rules from the dynamic appendix
-        
+
         Returns list of rule texts
         """
         rules = []
-        
+
         # Split by common delimiters (---, ###, **)
         sections = appendix.split("---")
-        
+
         for section in sections:
             section = section.strip()
             if section and len(section) > 20:  # Ignore very short sections
@@ -516,20 +576,20 @@ class CriticModel:
                     continue
                 else:
                     rules.append(section)
-        
+
         return rules
-    
+
     def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
         """Calculate cosine similarity between two vectors"""
         import math
-        
+
         dot_product = sum(a * b for a, b in zip(vec1, vec2))
         magnitude1 = math.sqrt(sum(a * a for a in vec1))
         magnitude2 = math.sqrt(sum(b * b for b in vec2))
-        
+
         if magnitude1 == 0 or magnitude2 == 0:
             return 0.0
-        
+
         return dot_product / (magnitude1 * magnitude2)
 
     def _build_updated_appendix(

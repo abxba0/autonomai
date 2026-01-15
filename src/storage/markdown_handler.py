@@ -74,7 +74,8 @@ class MarkdownHandler:
                     try:
                         failure_entry = FailureEntry.from_dict(failure_data)
                         failure_log.add(failure_entry)
-                    except Exception:
+                    except (KeyError, ValueError, TypeError):
+                        # Skip invalid failure entries
                         pass
 
                 # Start new failure
@@ -94,7 +95,8 @@ class MarkdownHandler:
             try:
                 failure_entry = FailureEntry.from_dict(failure_data)
                 failure_log.add(failure_entry)
-            except Exception:
+            except (KeyError, ValueError, TypeError):
+                # Skip invalid failure entries
                 pass
 
         return failure_log

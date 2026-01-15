@@ -64,7 +64,9 @@ class AlertRule:
             # Evaluate condition
             result = eval(self.condition, {"__builtins__": {}}, context)
             return bool(result)
-        except Exception:
+        except (SyntaxError, NameError, KeyError, TypeError, AttributeError) as e:
+            # Log evaluation errors for debugging
+            print(f"Alert condition evaluation error in '{self.name}': {e}")
             return False
 
     def trigger(self, metrics: Dict[str, Any]) -> "Alert":
@@ -110,9 +112,9 @@ class Alert:
             "timestamp": self.timestamp.isoformat(),
             "acknowledged": self.acknowledged,
             "acknowledged_by": self.acknowledged_by,
-            "acknowledged_at": self.acknowledged_at.isoformat()
-            if self.acknowledged_at
-            else None,
+            "acknowledged_at": (
+                self.acknowledged_at.isoformat() if self.acknowledged_at else None
+            ),
             "metrics": self.metrics,
         }
 
@@ -321,8 +323,10 @@ class AlertManager:
                 timestamp=datetime.fromisoformat(alert_data["timestamp"]),
                 acknowledged=alert_data["acknowledged"],
                 acknowledged_by=alert_data["acknowledged_by"],
-                acknowledged_at=datetime.fromisoformat(alert_data["acknowledged_at"])
-                if alert_data["acknowledged_at"]
-                else None,
+                acknowledged_at=(
+                    datetime.fromisoformat(alert_data["acknowledged_at"])
+                    if alert_data["acknowledged_at"]
+                    else None
+                ),
             )
             self.alerts.append(alert)

@@ -6,14 +6,13 @@ Provides validation for vision and audio inputs in the self-optimizing system.
 
 from typing import Dict, Any, List, Optional, Literal
 from pathlib import Path
-import json
 from dataclasses import dataclass, field
 
 
 @dataclass
 class VisionValidationResult:
     """Result of vision-specific validation"""
-    
+
     is_valid: bool
     confidence: float = 0.0
     detected_objects: List[str] = field(default_factory=list)
@@ -21,7 +20,7 @@ class VisionValidationResult:
     quality_score: float = 0.0
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary"""
         return {
@@ -31,14 +30,14 @@ class VisionValidationResult:
             "detected_text": self.detected_text,
             "quality_score": self.quality_score,
             "errors": self.errors,
-            "warnings": self.warnings
+            "warnings": self.warnings,
         }
 
 
 @dataclass
 class AudioValidationResult:
     """Result of audio-specific validation"""
-    
+
     is_valid: bool
     confidence: float = 0.0
     transcription: Optional[str] = None
@@ -47,7 +46,7 @@ class AudioValidationResult:
     duration_seconds: float = 0.0
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary"""
         return {
@@ -58,55 +57,62 @@ class AudioValidationResult:
             "quality_score": self.quality_score,
             "duration_seconds": self.duration_seconds,
             "errors": self.errors,
-            "warnings": self.warnings
+            "warnings": self.warnings,
         }
 
 
 class MultiModalValidator:
     """Validator for multi-modal inputs (vision, audio)"""
-    
+
     def __init__(self, config=None):
         """
         Initialize the multi-modal validator
-        
+
         Args:
             config: SystemConfig instance with multi-modal settings
         """
         self.config = config
-        self.vision_enabled = config and config.enable_multimodal and "vision" in config.supported_modalities
-        self.audio_enabled = config and config.enable_multimodal and "audio" in config.supported_modalities
-    
+        self.vision_enabled = (
+            config
+            and config.enable_multimodal
+            and "vision" in config.supported_modalities
+        )
+        self.audio_enabled = (
+            config
+            and config.enable_multimodal
+            and "audio" in config.supported_modalities
+        )
+
     def validate_vision(
         self,
         image_refs: List[str],
         expected_objects: Optional[List[str]] = None,
         expected_text: Optional[str] = None,
-        min_quality: float = 0.5
+        min_quality: float = 0.5,
     ) -> VisionValidationResult:
         """
         Validate vision inputs
-        
+
         Args:
             image_refs: List of image file paths or URLs
             expected_objects: Objects that should be detected in the image
             expected_text: Text that should be detected in the image (OCR)
             min_quality: Minimum quality score (0-1)
-            
+
         Returns:
             VisionValidationResult with validation details
         """
         if not self.vision_enabled:
             return VisionValidationResult(
-                is_valid=True,
-                warnings=["Vision validation disabled - skipping checks"]
+                is_valid=True, warnings=["Vision validation disabled - skipping checks"]
             )
-        
+
         errors = []
         warnings = []
         detected_objects = []
         detected_text = None
         quality_score = 0.0
-        
+
         # Check if images exist
         for img_ref in image_refs:
             if img_ref.startswith(("http://", "https://")):
@@ -122,21 +128,23 @@ class MultiModalValidator:
                 else:
                     # Basic validation passed
                     quality_score = 0.8  # Mock quality score
-        
+
         # In a real implementation, this would use a vision model to:
         # - Detect objects in the image
         # - Extract text via OCR
         # - Assess image quality
         # For now, we provide a mock implementation
-        
+
         if expected_objects:
-            warnings.append(f"Object detection not yet implemented. Expected: {expected_objects}")
-        
+            warnings.append(
+                f"Object detection not yet implemented. Expected: {expected_objects}"
+            )
+
         if expected_text:
             warnings.append(f"OCR not yet implemented. Expected text: {expected_text}")
-        
+
         is_valid = len(errors) == 0 and quality_score >= min_quality
-        
+
         return VisionValidationResult(
             is_valid=is_valid,
             confidence=0.8 if is_valid else 0.3,
@@ -144,43 +152,42 @@ class MultiModalValidator:
             detected_text=detected_text,
             quality_score=quality_score,
             errors=errors,
-            warnings=warnings
+            warnings=warnings,
         )
-    
+
     def validate_audio(
         self,
         audio_refs: List[str],
         expected_transcription: Optional[str] = None,
         expected_language: Optional[str] = None,
         min_duration: float = 0.0,
-        max_duration: float = 600.0
+        max_duration: float = 600.0,
     ) -> AudioValidationResult:
         """
         Validate audio inputs
-        
+
         Args:
             audio_refs: List of audio file paths or URLs
             expected_transcription: Text that should be in the transcription
             expected_language: Expected language code (e.g., "en", "es")
             min_duration: Minimum duration in seconds
             max_duration: Maximum duration in seconds
-            
+
         Returns:
             AudioValidationResult with validation details
         """
         if not self.audio_enabled:
             return AudioValidationResult(
-                is_valid=True,
-                warnings=["Audio validation disabled - skipping checks"]
+                is_valid=True, warnings=["Audio validation disabled - skipping checks"]
             )
-        
+
         errors = []
         warnings = []
         transcription = None
         language_detected = None
         quality_score = 0.0
         duration = 0.0
-        
+
         # Check if audio files exist
         for audio_ref in audio_refs:
             if audio_ref.startswith(("http://", "https://")):
@@ -197,27 +204,33 @@ class MultiModalValidator:
                     # Basic validation passed
                     quality_score = 0.8  # Mock quality score
                     duration = 10.0  # Mock duration
-        
+
         # In a real implementation, this would use an audio model to:
         # - Transcribe the audio
         # - Detect language
         # - Assess audio quality
         # For now, we provide a mock implementation
-        
+
         if expected_transcription:
-            warnings.append(f"Transcription not yet implemented. Expected: {expected_transcription}")
-        
+            warnings.append(
+                f"Transcription not yet implemented. Expected: {expected_transcription}"
+            )
+
         if expected_language:
-            warnings.append(f"Language detection not yet implemented. Expected: {expected_language}")
-        
+            warnings.append(
+                f"Language detection not yet implemented. Expected: {expected_language}"
+            )
+
         # Check duration constraints
         if duration < min_duration:
-            errors.append(f"Audio duration {duration}s is below minimum {min_duration}s")
+            errors.append(
+                f"Audio duration {duration}s is below minimum {min_duration}s"
+            )
         elif duration > max_duration:
             errors.append(f"Audio duration {duration}s exceeds maximum {max_duration}s")
-        
+
         is_valid = len(errors) == 0
-        
+
         return AudioValidationResult(
             is_valid=is_valid,
             confidence=0.8 if is_valid else 0.3,
@@ -226,25 +239,25 @@ class MultiModalValidator:
             quality_score=quality_score,
             duration_seconds=duration,
             errors=errors,
-            warnings=warnings
+            warnings=warnings,
         )
-    
+
     def validate_multimodal(
         self,
         modality: Literal["text", "vision", "audio", "multi-modal"],
         vision_refs: Optional[List[str]] = None,
         audio_refs: Optional[List[str]] = None,
-        validation_rules: Optional[Dict[str, Any]] = None
+        validation_rules: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Validate multi-modal input based on modality type
-        
+
         Args:
             modality: Type of input (text, vision, audio, multi-modal)
             vision_refs: Image references (for vision/multi-modal)
             audio_refs: Audio references (for audio/multi-modal)
             validation_rules: Optional validation rules
-            
+
         Returns:
             Dictionary with validation results
         """
@@ -254,23 +267,25 @@ class MultiModalValidator:
             "vision_result": None,
             "audio_result": None,
             "errors": [],
-            "warnings": []
+            "warnings": [],
         }
-        
+
         # Validate based on modality
         if modality in ["vision", "multi-modal"] and vision_refs:
-            vision_rules = validation_rules.get("vision", {}) if validation_rules else {}
+            vision_rules = (
+                validation_rules.get("vision", {}) if validation_rules else {}
+            )
             vision_result = self.validate_vision(
                 vision_refs,
                 expected_objects=vision_rules.get("expected_objects"),
                 expected_text=vision_rules.get("expected_text"),
-                min_quality=vision_rules.get("min_quality", 0.5)
+                min_quality=vision_rules.get("min_quality", 0.5),
             )
             results["vision_result"] = vision_result.to_dict()
             results["is_valid"] = results["is_valid"] and vision_result.is_valid
             results["errors"].extend(vision_result.errors)
             results["warnings"].extend(vision_result.warnings)
-        
+
         if modality in ["audio", "multi-modal"] and audio_refs:
             audio_rules = validation_rules.get("audio", {}) if validation_rules else {}
             audio_result = self.validate_audio(
@@ -278,33 +293,33 @@ class MultiModalValidator:
                 expected_transcription=audio_rules.get("expected_transcription"),
                 expected_language=audio_rules.get("expected_language"),
                 min_duration=audio_rules.get("min_duration", 0.0),
-                max_duration=audio_rules.get("max_duration", 600.0)
+                max_duration=audio_rules.get("max_duration", 600.0),
             )
             results["audio_result"] = audio_result.to_dict()
             results["is_valid"] = results["is_valid"] and audio_result.is_valid
             results["errors"].extend(audio_result.errors)
             results["warnings"].extend(audio_result.warnings)
-        
+
         return results
 
 
 class MockMultiModalValidator(MultiModalValidator):
     """Mock validator for testing without actual multi-modal processing"""
-    
+
     def __init__(self, config=None):
         super().__init__(config)
         self.mock_results = {}
-    
+
     def set_mock_result(self, modality: str, result: Dict[str, Any]):
         """Set mock result for testing"""
         self.mock_results[modality] = result
-    
+
     def validate_vision(self, *args, **kwargs) -> VisionValidationResult:
         """Return mock vision result"""
         if "vision" in self.mock_results:
             return VisionValidationResult(**self.mock_results["vision"])
         return VisionValidationResult(is_valid=True, confidence=1.0)
-    
+
     def validate_audio(self, *args, **kwargs) -> AudioValidationResult:
         """Return mock audio result"""
         if "audio" in self.mock_results:
