@@ -198,6 +198,9 @@ class WorkflowOrchestrator:
     - Self-optimization: Learns from failures to improve planning and execution
     - Trajectory correction: Optimizes entire workflow patterns, not just individual steps
     """
+    
+    # Safety limit: extra iterations beyond calculated retries to prevent edge case infinite loops
+    WORKFLOW_SAFETY_BUFFER = 10
 
     def __init__(
         self,
@@ -245,6 +248,35 @@ class WorkflowOrchestrator:
         """Initialize the Critic model for workflow optimization"""
         self.critic = CriticModel(self.config, self.base_instruction_manager)
 
+    def _swap_instructions_temporarily(self, new_instructions: str, restore_callback):
+        """
+        Helper method to temporarily swap instructions and restore them after execution
+        
+        Args:
+            new_instructions: The new instructions to use temporarily
+            restore_callback: Function to call after restoration (receives restored instructions)
+        """
+        # Save original instructions
+        original_instructions = self.base_instruction_manager.get_full_instructions()
+        
+        # Apply new instructions
+        self.base_instruction_manager.base_instructions = new_instructions
+        self.base_instruction_manager.dynamic_appendix = ""
+        
+        # Execute callback
+        result = restore_callback()
+        
+        # Restore original instructions
+        if "# Dynamic Appendix" in original_instructions:
+            parts = original_instructions.split("# Dynamic Appendix")
+            self.base_instruction_manager.base_instructions = parts[0].strip()
+            self.base_instruction_manager.dynamic_appendix = "# Dynamic Appendix" + parts[1]
+        else:
+            self.base_instruction_manager.base_instructions = original_instructions
+            self.base_instruction_manager.dynamic_appendix = ""
+        
+        return result
+
     def create_workflow_plan(
         self, goal: str, context: Optional[Dict[str, Any]] = None
     ) -> WorkflowPlan:
@@ -280,29 +312,22 @@ Return ONLY the JSON workflow plan, no additional text.
 
         # Execute planning with planner instructions
         try:
-            # Override instructions temporarily
-            original_instructions = self.base_instruction_manager.get_full_instructions()
-            self.base_instruction_manager.base_instructions = planner_instructions
-            self.base_instruction_manager.dynamic_appendix = ""
-
-            # Get plan from planner
-            result = self.planner.model.invoke(planning_prompt)
+            # Get planner instructions
+            planner_instructions = (
+                self.workflow_instruction_manager.get_planner_instructions()
+            )
             
-            # Extract response content
-            if hasattr(result, "content"):
-                response = result.content
-            else:
-                response = str(result)
-
-            # Restore original instructions
-            self.base_instruction_manager.base_instructions = original_instructions.split(
-                "# Dynamic Appendix"
-            )[0].strip()
-            if "# Dynamic Appendix" in original_instructions:
-                self.base_instruction_manager.dynamic_appendix = (
-                    "# Dynamic Appendix"
-                    + original_instructions.split("# Dynamic Appendix")[1]
-                )
+            # Execute with temporarily swapped instructions
+            def execute_planning():
+                result = self.planner.model.invoke(planning_prompt)
+                if hasattr(result, "content"):
+                    return result.content
+                return str(result)
+            
+            response = self._swap_instructions_temporarily(
+                planner_instructions,
+                execute_planning
+            )
 
             # Parse JSON response
             plan_data = self._extract_json_from_response(response)
@@ -471,29 +496,20 @@ Expected format:
 """
 
         try:
-            # Override instructions temporarily
-            original_instructions = self.base_instruction_manager.get_full_instructions()
-            self.base_instruction_manager.base_instructions = actor_instructions
-            self.base_instruction_manager.dynamic_appendix = ""
+            # Get actor instructions
+            actor_instructions = self.workflow_instruction_manager.get_actor_instructions()
 
-            # Execute step
-            result = self.executor.model.invoke(execution_prompt)
+            # Execute step with temporarily swapped instructions
+            def execute_step_logic():
+                result = self.executor.model.invoke(execution_prompt)
+                if hasattr(result, "content"):
+                    return result.content
+                return str(result)
             
-            # Extract response content
-            if hasattr(result, "content"):
-                response = result.content
-            else:
-                response = str(result)
-
-            # Restore original instructions
-            self.base_instruction_manager.base_instructions = original_instructions.split(
-                "# Dynamic Appendix"
-            )[0].strip()
-            if "# Dynamic Appendix" in original_instructions:
-                self.base_instruction_manager.dynamic_appendix = (
-                    "# Dynamic Appendix"
-                    + original_instructions.split("# Dynamic Appendix")[1]
-                )
+            response = self._swap_instructions_temporarily(
+                actor_instructions,
+                execute_step_logic
+            )
 
             # Parse result
             result_data = self._extract_json_from_response(response)
@@ -591,7 +607,9 @@ Expected format:
         }
 
         retry_count = 0
-        max_iterations = len(workflow.steps) * (max_retries + 1) + 10  # Safety limit
+        # Safety limit: Calculate max iterations based on workflow size and retries
+        # Buffer allows for edge cases without risking infinite loops
+        max_iterations = len(workflow.steps) * (max_retries + 1) + self.WORKFLOW_SAFETY_BUFFER
         iteration_count = 0
 
         # Execute workflow steps
@@ -606,6 +624,15 @@ Expected format:
                     failed_steps = workflow.get_failed_steps()
                     for failed_step in failed_steps:
                         self._handle_step_failure(workflow, failed_step)
+                        # Preserve failure history in execution log before retrying
+                        failed_step.execution_log.append(
+                            {
+                                "timestamp": datetime.now().isoformat(),
+                                "event": "retry_attempt",
+                                "previous_error": failed_step.error_message,
+                                "retry_count": retry_count + 1,
+                            }
+                        )
                         # Reset step to retry
                         failed_step.status = StepStatus.PENDING
                         failed_step.error_message = None
