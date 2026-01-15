@@ -33,6 +33,16 @@ class GoldenInteraction:
     model_used: Optional[str] = None
     tags: List[str] = field(default_factory=list)
     
+    # Multi-Modal Support (Phase 5)
+    modality: str = "text"  # text, vision, audio, multi-modal
+    vision_input_refs: List[str] = field(default_factory=list)
+    audio_input_refs: List[str] = field(default_factory=list)
+    vision_validation_rules: Dict[str, Any] = field(default_factory=dict)
+    audio_validation_rules: Dict[str, Any] = field(default_factory=dict)
+    
+    # Multi-Tenant Support (Phase 7)
+    tenant_id: str = "default"
+    
     # Metadata
     success_count: int = 1
     last_validated: Optional[str] = None
@@ -50,6 +60,12 @@ class GoldenInteraction:
             "instructions_version": self.instructions_version,
             "model_used": self.model_used,
             "tags": self.tags,
+            "modality": self.modality,
+            "vision_input_refs": self.vision_input_refs,
+            "audio_input_refs": self.audio_input_refs,
+            "vision_validation_rules": self.vision_validation_rules,
+            "audio_validation_rules": self.audio_validation_rules,
+            "tenant_id": self.tenant_id,
             "success_count": self.success_count,
             "last_validated": self.last_validated
         }
@@ -57,7 +73,8 @@ class GoldenInteraction:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "GoldenInteraction":
         """Create from dictionary"""
-        return cls(**data)
+        # Handle backward compatibility - older data may not have new fields
+        return cls(**{k: v for k, v in data.items() if k in cls.__annotations__})
 
 
 @dataclass

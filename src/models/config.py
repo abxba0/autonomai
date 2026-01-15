@@ -86,6 +86,25 @@ class SystemConfig:
     golden_dataset_max_size: int = 100
     regression_test_sample_size: int = 10  # Number of tests to run on each update
     regression_pass_threshold: float = 0.9  # Minimum pass rate to apply changes
+    
+    # Multi-Modal Optimization (Phase 5)
+    enable_multimodal: bool = False
+    supported_modalities: List[str] = field(default_factory=lambda: ["text", "vision", "audio"])
+    vision_model: Optional[str] = None  # Specific model for vision tasks
+    audio_model: Optional[str] = None  # Specific model for audio tasks
+    multimodal_validation_timeout: int = 60  # Longer timeout for multi-modal
+    
+    # Knowledge Graph for Rules (Phase 6)
+    enable_knowledge_graph: bool = False
+    rule_graph_file: str = "rule_graph.json"
+    enable_rule_inheritance: bool = True
+    enable_rule_supersession: bool = True
+    max_rule_depth: int = 5  # Maximum depth for rule hierarchy
+    
+    # Multi-Tenant Isolation (Phase 7)
+    enable_multi_tenant: bool = False
+    default_tenant_id: str = "default"
+    tenant_isolation_strict: bool = True  # Strict isolation vs. shared base rules
 
 
 @dataclass
@@ -117,6 +136,16 @@ class FailureEntry:
     # Context
     user_query: Optional[str] = None
     conversation_context: Optional[str] = None
+    
+    # Multi-Modal Support (Phase 5)
+    modality: str = "text"  # text, vision, audio, multi-modal
+    vision_input_refs: List[str] = field(default_factory=list)  # File paths or URLs
+    audio_input_refs: List[str] = field(default_factory=list)  # File paths or URLs
+    vision_validation_errors: Optional[Dict[str, Any]] = None
+    audio_validation_errors: Optional[Dict[str, Any]] = None
+    
+    # Multi-Tenant Support (Phase 7)
+    tenant_id: str = "default"
 
     # Resolution Tracking
     optimization_attempted: bool = False
