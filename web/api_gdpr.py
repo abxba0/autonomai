@@ -7,8 +7,16 @@ Provides API endpoints for user rights under UK GDPR:
 - Right to Data Portability (Article 20)
 - Right to Rectification (Article 16)
 - Consent Management
+
+Configuration via environment variables:
+- ORGANIZATION_NAME: Your organization name
+- PRIVACY_EMAIL: Privacy contact email
+- DPO_EMAIL: Data Protection Officer email
+- PRIVACY_POLICY_VERSION: Privacy policy version
+- PRIVACY_POLICY_DATE: Privacy policy effective date
 """
 
+import os
 from fastapi import APIRouter, HTTPException, Depends, Response, status, Request
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List, Dict, Any
@@ -21,6 +29,13 @@ from src.security import (
     ConsentPurpose,
     DataExportFormat,
 )
+
+# Configuration - should be set via environment variables
+PRIVACY_POLICY_VERSION = os.getenv("PRIVACY_POLICY_VERSION", "1.0")
+PRIVACY_POLICY_DATE = os.getenv("PRIVACY_POLICY_DATE", "2026-01-15")
+ORGANIZATION_NAME = os.getenv("ORGANIZATION_NAME", "Your Organization Name")
+PRIVACY_EMAIL = os.getenv("PRIVACY_EMAIL", "privacy@example.com")
+DPO_EMAIL = os.getenv("DPO_EMAIL", "dpo@example.com")
 
 # Create router
 router = APIRouter(prefix="/gdpr", tags=["GDPR Compliance"])
@@ -463,10 +478,10 @@ async def get_privacy_policy():
     Returns link to privacy policy document
     """
     return {
-        "version": "1.0",
-        "effective_date": "2026-01-15",
+        "version": PRIVACY_POLICY_VERSION,
+        "effective_date": PRIVACY_POLICY_DATE,
         "url": "/docs/PRIVACY_POLICY.md",
-        "last_updated": "2026-01-15",
+        "last_updated": PRIVACY_POLICY_DATE,
     }
 
 
@@ -476,13 +491,18 @@ async def get_compliance_info():
     Get UK GDPR compliance information
 
     Provides information about data protection measures and user rights
+    
+    Note: Configure organization details via environment variables:
+    - ORGANIZATION_NAME
+    - PRIVACY_EMAIL
+    - DPO_EMAIL
     """
     return {
         "legislation": ["UK GDPR", "Data Protection Act 2018"],
         "data_controller": {
-            "name": "Your Organization Name",
-            "email": "privacy@example.com",
-            "dpo_email": "dpo@example.com",
+            "name": ORGANIZATION_NAME,
+            "email": PRIVACY_EMAIL,
+            "dpo_email": DPO_EMAIL,
         },
         "user_rights": [
             {

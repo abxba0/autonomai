@@ -1,5 +1,9 @@
 # Privacy Policy
 
+> **⚠️ IMPORTANT**: This is a template. Before deploying, replace all placeholder
+> information (marked with square brackets or "example.com") with your actual
+> organization details. See the configuration section at the end of this document.
+
 **Effective Date:** 15 January 2026  
 **Last Updated:** 15 January 2026  
 **Version:** 1.0
@@ -16,6 +20,9 @@ By using our service, you agree to the collection and use of information in acco
 **Contact Email**: privacy@example.com  
 **Data Protection Officer**: dpo@example.com  
 **Address**: [Your Address]
+
+> **⚠️ ACTION REQUIRED**: Replace the placeholder information above with your
+> actual organization details before deployment.
 
 For questions about this Privacy Policy or your personal data, please contact our Data Protection Officer.
 

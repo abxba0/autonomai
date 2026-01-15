@@ -315,6 +315,12 @@ class GDPRCompliance:
 
         Returns:
             Dictionary containing all user data
+            
+        Note: This is a reference implementation. In production, replace
+        the placeholder data with actual database queries:
+        - Use self.db.get_user(user_id) for account data
+        - Use self.db.get_user_queries(user_id) for usage data
+        - Use self.audit_logger.get_user_logs(user_id) for audit logs
         """
         data = {
             "user_id": user_id,
@@ -326,36 +332,62 @@ class GDPRCompliance:
             "audit_logs": [],
         }
 
-        # Account data (would be fetched from database)
-        data["account_data"] = {
-            "username": f"user_{user_id}",
-            "email": f"user_{user_id}@example.com",
-            "role": "viewer",
-            "created_at": "2024-01-01T00:00:00Z",
-            "last_login": datetime.utcnow().isoformat(),
-            "is_active": True,
-        }
+        # Account data
+        # TODO: Replace with actual database query in production
+        # Example: user = self.db.get_user(user_id)
+        if self.db:
+            # When database manager is connected, fetch real data
+            # data["account_data"] = self.db.get_user_account_data(user_id)
+            pass
+        else:
+            # Placeholder data for development/testing
+            data["account_data"] = {
+                "username": f"user_{user_id}",
+                "email": f"user_{user_id}@example.com",
+                "role": "viewer",
+                "created_at": "2024-01-01T00:00:00Z",
+                "last_login": datetime.utcnow().isoformat(),
+                "is_active": True,
+                "note": "This is placeholder data. Configure database manager for real data.",
+            }
 
         # Authentication data (excluding sensitive hashes)
-        data["authentication_data"] = {
-            "api_keys": [],  # List of API key metadata (not actual keys)
-            "session_count": 0,
-            "login_history": [],
-        }
+        # TODO: Replace with actual database query in production
+        if self.db:
+            # data["authentication_data"] = self.db.get_user_auth_data(user_id)
+            pass
+        else:
+            data["authentication_data"] = {
+                "api_keys": [],  # List of API key metadata (not actual keys)
+                "session_count": 0,
+                "login_history": [],
+                "note": "This is placeholder data. Configure database manager for real data.",
+            }
 
         # Usage data
-        data["usage_data"] = {
-            "total_queries": 0,
-            "queries": [],  # Recent queries
-            "feedback_provided": [],
-            "system_interactions": [],
-        }
+        # TODO: Replace with actual database query in production
+        if self.db:
+            # data["usage_data"] = self.db.get_user_usage_data(user_id)
+            pass
+        else:
+            data["usage_data"] = {
+                "total_queries": 0,
+                "queries": [],  # Recent queries
+                "feedback_provided": [],
+                "system_interactions": [],
+                "note": "This is placeholder data. Configure database manager for real data.",
+            }
 
-        # Consent records
+        # Consent records (from in-memory store or database)
         data["consent_records"] = self.get_consent_history(user_id)
 
         # Audit logs related to this user
-        data["audit_logs"] = []  # Would be fetched from audit system
+        # TODO: Replace with actual audit log query in production
+        if self.audit_logger:
+            # data["audit_logs"] = self.audit_logger.get_user_logs(user_id)
+            pass
+        else:
+            data["audit_logs"] = []  # Would be fetched from audit system
 
         return data
 
@@ -511,22 +543,54 @@ class GDPRCompliance:
 
         Returns:
             bool: True if deletion successful
+            
+        Note: This is a reference implementation. In production:
+        1. Implement database deletion: self.db.delete_user_account(user_id)
+        2. Implement auth data deletion: self.db.delete_user_authentication(user_id)
+        3. Implement usage data deletion: self.db.delete_user_queries(user_id)
+        4. Anonymize audit logs: self.audit_logger.anonymize_user_logs(user_id)
+        5. Ensure GDPR compliance: Keep anonymized audit logs for 7 years
         """
         try:
             # 1. Deactivate account
-            # self.db.deactivate_user(user_id)
+            if self.db:
+                # self.db.deactivate_user(user_id)
+                # TODO: Implement in production with actual database manager
+                pass
 
             # 2. Delete personal data
-            # self.db.delete_user_account(user_id)
-            # self.db.delete_user_authentication(user_id)
-            # self.db.delete_user_queries(user_id)
+            if self.db:
+                # Delete from all tables containing personal data
+                # self.db.delete_user_account(user_id)
+                # self.db.delete_user_authentication(user_id)
+                # self.db.delete_user_queries(user_id)
+                # self.db.delete_user_feedback(user_id)
+                # self.db.delete_user_sessions(user_id)
+                # TODO: Implement in production with actual database manager
+                pass
 
-            # 3. Anonymize audit logs (keep for legal compliance)
-            # self.audit_logger.anonymize_user_logs(user_id)
+            # 3. Anonymize audit logs (keep for legal compliance - 7 years)
+            # Do NOT delete audit logs - anonymize them instead
+            if self.audit_logger:
+                # self.audit_logger.anonymize_user_logs(user_id)
+                # Replace user_id with anonymized reference like "deleted_user_abc123"
+                # TODO: Implement in production with actual audit logger
+                pass
 
-            # 4. Remove from consent records
+            # 4. Remove from in-memory consent records
             if user_id in self.consent_records:
                 del self.consent_records[user_id]
+            
+            # 5. Remove from access and deletion request records
+            # Clean up request tracking
+            for request_id in list(self.access_requests.keys()):
+                if self.access_requests[request_id].user_id == user_id:
+                    del self.access_requests[request_id]
+            
+            for request_id in list(self.deletion_requests.keys()):
+                if self.deletion_requests[request_id].user_id == user_id:
+                    # Keep the deletion request record for audit purposes
+                    pass
 
             return True
         except Exception as e:
