@@ -64,6 +64,10 @@ class SystemConfig:
     enable_auto_validation: bool = True
     validation_timeout_seconds: int = 30
 
+    # Implicit Feedback / Correction Detection
+    enable_correction_detection: bool = True
+    correction_detection_confidence_threshold: float = 0.7
+
 
 @dataclass
 class OptimizationAttempt:
@@ -80,7 +84,7 @@ class OptimizationAttempt:
 class FailureEntry:
     """Represents a single failure in the log"""
 
-    trigger_type: Literal["auto_validation", "human_feedback"]
+    trigger_type: Literal["auto_validation", "human_feedback", "implicit_feedback"]
     failure_description: str
     id: str = field(default_factory=lambda: datetime.now().strftime("%Y%m%d_%H%M%S"))
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())

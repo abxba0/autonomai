@@ -55,12 +55,14 @@ class SelfOptimizingSystem:
         # Execute query
         result = self.main_model.execute(user_query, conversation_context)
 
-        # If validation failed and auto-optimization is enabled, try to optimize
-        if (
-            not result["validation_passed"]
+        # If validation failed OR correction detected, and auto-optimization is enabled, try to optimize
+        should_optimize = (
+            (not result["validation_passed"] or result.get("correction_detected", False))
             and self.config.enable_auto_optimization
             and result["failure_entry"]
-        ):
+        )
+        
+        if should_optimize:
             optimization_result = self.critic_model.optimize(result["failure_entry"])
             result["optimization_attempted"] = True
             result["optimization_result"] = optimization_result
