@@ -39,6 +39,16 @@ This system implements a self-optimizing AI assistant that:
 - Regex pattern matching
 - Custom validation functions
 
+### 🔀 Autonomous Workflow Orchestrator (NEW)
+- **Planner-Executor-Critic Pattern**: Dynamic multi-step workflow automation
+- **Dynamic Planning**: Generates workflow plans from high-level goals using specialized Planner LLM
+- **Specialized Execution**: Executes steps with role-specific Actor instructions
+- **Self-Optimizing**: Learns from workflow failures to improve both planning and execution
+- **Trajectory Correction**: Optimizes entire workflow patterns, not just individual steps
+- **Granular Versioning**: Separate version control for planner and actor instructions
+- **Failure Analysis**: Distinguishes between planning failures and execution failures
+- **Automatic Recovery**: Retries failed steps with optimized instructions
+
 ## Architecture
 
 ### Core Components
@@ -50,6 +60,7 @@ This system implements a self-optimizing AI assistant that:
 5. **InstructionManager**: Manages instruction files and version control
 6. **ValidationPipeline**: Validates model outputs against configurable rules
 7. **VersionController**: Maintains history of instruction changes
+8. **WorkflowOrchestrator (NEW)**: Orchestrates multi-step workflows with Planner-Executor-Critic pattern
 
 ### Data Models
 
@@ -57,6 +68,9 @@ This system implements a self-optimizing AI assistant that:
 - `FailureEntry`: Represents a single failure with metadata (supports `implicit_feedback` trigger)
 - `CriticResponse`: Structured output from the Critic model
 - `VersionMetadata`: Tracks changes and version history
+- `WorkflowPlan`: Multi-step workflow with dependencies and execution state
+- `WorkflowStep`: Individual step in a workflow with status tracking
+- `WorkflowFailure`: Failure context for Critic analysis with planning/execution distinction
 
 ## Installation
 
@@ -167,6 +181,50 @@ print(f"Extracted {result['rules_count']} positive rules")
 print(f"Extracted {result['dont_rules_count']} negative rules")
 print(result['formatted_display'])  # Show detailed analysis
 ```
+
+### Using the Workflow Orchestrator (NEW)
+
+```python
+from src import SelfOptimizingSystem
+
+# Initialize system
+system = SelfOptimizingSystem()
+
+# Execute a multi-step workflow from a high-level goal
+result = system.execute_workflow(
+    goal="Research and create a comprehensive report on autonomous AI agents",
+    context={
+        "output_format": "markdown report",
+        "focus_areas": ["capabilities", "challenges", "future directions"],
+        "target_length": "1500-2000 words"
+    },
+    max_retries=3  # Automatic retry with optimized instructions on failure
+)
+
+print(f"Workflow Status: {result['status']}")
+print(f"Steps Completed: {result['steps_completed']}/{result['total_steps']}")
+
+# Access detailed workflow information
+workflow = result['workflow']
+print(f"Workflow Plan: {workflow['name']}")
+print(f"Planner Version: {workflow['planner_version']}")
+print(f"Actor Version: {workflow['actor_version']}")
+
+# Review step execution
+for step_result in result['results']:
+    print(f"Step {step_result['step_id']}: {step_result['status']}")
+    if step_result['success']:
+        print(f"  Outputs: {step_result['outputs']}")
+```
+
+**Key Workflow Features:**
+- **Dynamic Planning**: The Planner LLM analyzes your goal and creates a multi-step plan
+- **Dependency Management**: Steps execute in proper order based on dependencies
+- **Automatic Recovery**: If a step fails, the Critic determines if it was a planning or execution issue
+- **Targeted Optimization**: Failures improve either planner.md or actor.md instructions accordingly
+- **Version Tracking**: Separate versioning for planning and execution strategies
+
+See `examples/autonomous_researcher.py` for a complete workflow demo.
 
 ## Features
 
