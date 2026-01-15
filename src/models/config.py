@@ -55,6 +55,10 @@ class SystemConfig:
     base_prompt_tokens: int = 2000
     semantic_similarity_threshold: float = 0.7
     use_semantic_filtering: bool = True
+    
+    # Semantic De-duplication (Phase 1)
+    enable_semantic_deduplication: bool = True
+    rule_similarity_threshold: float = 0.8  # Higher threshold for rules than failures
 
     # Version Control
     max_versions_to_keep: int = 100
@@ -67,6 +71,21 @@ class SystemConfig:
     # Implicit Feedback / Correction Detection
     enable_correction_detection: bool = True
     correction_detection_confidence_threshold: float = 0.7
+    
+    # Consensus Critic / Judge Pattern (Phase 2)
+    enable_judge_model: bool = True
+    judge_approval_required: bool = True  # Require judge approval before applying changes
+    
+    # Confidence-Based Throttling (Phase 4)
+    enable_confidence_throttling: bool = True
+    confidence_threshold: float = 0.7  # Minimum confidence to auto-apply changes
+    
+    # Automated Regression Testing / Golden Suite (Phase 3)
+    enable_regression_testing: bool = True
+    golden_dataset_file: str = "golden_dataset.json"
+    golden_dataset_max_size: int = 100
+    regression_test_sample_size: int = 10  # Number of tests to run on each update
+    regression_pass_threshold: float = 0.9  # Minimum pass rate to apply changes
 
 
 @dataclass
