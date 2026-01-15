@@ -122,7 +122,7 @@ class SecurityValidator:
             try:
                 result = urlparse(input_str)
                 return all([result.scheme, result.netloc])
-            except Exception:
+            except (ValueError, TypeError, AttributeError):
                 return False
 
         elif validation_type == "email":

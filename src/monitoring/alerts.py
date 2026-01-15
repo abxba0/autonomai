@@ -64,7 +64,9 @@ class AlertRule:
             # Evaluate condition
             result = eval(self.condition, {"__builtins__": {}}, context)
             return bool(result)
-        except Exception:
+        except (SyntaxError, NameError, KeyError, TypeError, AttributeError) as e:
+            # Log evaluation errors for debugging
+            print(f"Alert condition evaluation error in '{self.name}': {e}")
             return False
 
     def trigger(self, metrics: Dict[str, Any]) -> "Alert":
