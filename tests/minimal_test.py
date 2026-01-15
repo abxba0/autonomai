@@ -17,7 +17,7 @@ def test_core_models():
 
     try:
         # Test SystemConfig
-        from models.config import SystemConfig
+        from src.models.config import SystemConfig
 
         config = SystemConfig(
             main_model="mock-model",
@@ -27,7 +27,7 @@ def test_core_models():
         print(f"✓ SystemConfig created: {config.main_model}")
 
         # Test CriticResponse
-        from models.critic_response import CriticResponse
+        from src.models.critic_response import CriticResponse
 
         critic_response = CriticResponse(
             impact_analysis="This is a detailed impact analysis that explains why this change is needed for the system to work properly.",
@@ -40,7 +40,7 @@ def test_core_models():
         print(f"✓ CriticResponse created: {critic_response.change_type}")
 
         # Test VersionMetadata
-        from models.version import VersionMetadata
+        from src.models.version import VersionMetadata
 
         version = VersionMetadata(
             version_id="v1.0.0",
@@ -66,7 +66,7 @@ def test_validators():
     print("\nTesting validators...")
 
     try:
-        from core.validator import JSONValidator, LengthValidator, ValidationPipeline
+        from src.core.validator import JSONValidator, LengthValidator, ValidationPipeline
 
         # Test JSONValidator
         json_validator = JSONValidator(required_fields=["status"])

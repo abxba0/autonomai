@@ -13,22 +13,22 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 try:
     print("Testing imports from src directory...")
 
-    from models.config import SystemConfig
+    from src.models.config import SystemConfig
 
     print("✓ SystemConfig imported")
 
-    from models.critic_response import CriticResponse
+    from src.models.critic_response import CriticResponse
 
     print("✓ CriticResponse imported")
 
     print("✓ VersionMetadata imported")
 
-    from core.validator import ValidationPipeline, JSONValidator, LengthValidator
+    from src.core.validator import ValidationPipeline, JSONValidator, LengthValidator
 
     print("✓ Validator classes imported")
 
     # Test creating a failure entry (using the config model)
-    from models.config import FailureEntry
+    from src.models.config import FailureEntry
 
     failure = FailureEntry(
         trigger_type="auto_validation",
