@@ -21,14 +21,13 @@ class InstructionManager:
         # Components
         self.md_handler = MarkdownHandler()
         self.version_controller = VersionController(self.versions_dir, config)
-        
+
         # Phase 3: Golden Dataset for regression testing
         self.golden_dataset = None
         if self.config.enable_regression_testing:
             golden_path = self.config.instructions_dir / self.config.golden_dataset_file
             self.golden_dataset = GoldenDataset(
-                golden_path,
-                max_size=self.config.golden_dataset_max_size
+                golden_path, max_size=self.config.golden_dataset_max_size
             )
 
         # State

@@ -13,6 +13,7 @@ from enum import Enum
 # Try to import redis as optional dependency
 try:
     import redis
+
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
@@ -20,6 +21,7 @@ except ImportError:
 
 try:
     from fastapi import HTTPException, status
+
     FASTAPI_AVAILABLE = True
 except ImportError:
     FASTAPI_AVAILABLE = False
@@ -72,7 +74,7 @@ class RateLimiter:
         if use_redis:
             if not REDIS_AVAILABLE:
                 print("Warning: Redis requested but redis package not available")
-                print("Install with: pip install -e \".[web]\" for redis support")
+                print('Install with: pip install -e ".[web]" for redis support')
                 print("Falling back to in-memory rate limiting")
                 self.use_redis = False
             else:
@@ -90,7 +92,9 @@ class RateLimiter:
                 except Exception as e:
                     self.use_redis = False
                     self.redis_client = None
-                    print(f"Redis initialization failed: {e}, falling back to in-memory rate limiting")
+                    print(
+                        f"Redis initialization failed: {e}, falling back to in-memory rate limiting"
+                    )
 
         if not self.use_redis:
             self.records: Dict[str, RateLimitRecord] = {}
@@ -405,13 +409,17 @@ def check_rate_limit(
 ):
     """FastAPI dependency for rate limiting"""
     allowed, headers = rate_limiter.check_rate_limit(client_id, endpoint)
-    
+
     if not allowed:
         if not FASTAPI_AVAILABLE:
             # If FastAPI is not available, return a dict with error info
             # This allows calling code to handle the error appropriately
-            return {"error": "Rate limit exceeded", "allowed": False, "headers": headers}
-        
+            return {
+                "error": "Rate limit exceeded",
+                "allowed": False,
+                "headers": headers,
+            }
+
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Rate limit exceeded",

@@ -21,7 +21,7 @@ class TerminalChatbot:
         """Initialize the chatbot"""
         # Load environment variables
         load_dotenv()
-        
+
         # Configure system to use DeepSeek
         self.config = SystemConfig(
             main_model="deepseek-chat",
@@ -32,18 +32,18 @@ class TerminalChatbot:
             temperature_critic=0.3,
             enable_auto_optimization=True,
         )
-        
+
         # Initialize the self-optimizing system
         print("🤖 Initializing chatbot with DeepSeek API...")
         self.system = SelfOptimizingSystem(self.config)
-        
+
         # Add validators to demonstrate validation features
         self.system.add_validator(LengthValidator(min_length=5, max_length=2000))
-        
+
         # Conversation history
         self.conversation_history = []
         self.running = False
-        
+
         print("✅ Chatbot initialized successfully!\n")
 
     def show_banner(self):
@@ -94,7 +94,7 @@ class TerminalChatbot:
     def show_status(self):
         """Display system status"""
         status = self.system.get_status()
-        
+
         print("\n📊 System Status:")
         print(f"  Status: {status['status']}")
         print(f"  Main Model: {status['config']['main_model']} (DeepSeek)")
@@ -110,22 +110,28 @@ class TerminalChatbot:
         if not self.conversation_history:
             print("\n📝 No conversation history yet.\n")
             return
-        
-        print(f"\n📝 Conversation History ({len(self.conversation_history)} messages):\n")
+
+        print(
+            f"\n📝 Conversation History ({len(self.conversation_history)} messages):\n"
+        )
         for i, msg in enumerate(self.conversation_history[-10:], 1):  # Show last 10
             role = "You" if msg["role"] == "user" else "Bot"
-            content = msg["content"][:100] + "..." if len(msg["content"]) > 100 else msg["content"]
+            content = (
+                msg["content"][:100] + "..."
+                if len(msg["content"]) > 100
+                else msg["content"]
+            )
             print(f"  {i}. {role}: {content}")
         print()
 
     def show_versions(self):
         """Display version history"""
         versions = self.system.get_version_history()
-        
+
         if not versions:
             print("\n📦 No version history yet.\n")
             return
-        
+
         print(f"\n📦 Instruction Version History ({len(versions)} versions):\n")
         for version in versions[-5:]:  # Show last 5
             print(f"  • {version['version_id']}")
@@ -137,72 +143,77 @@ class TerminalChatbot:
         """Submit manual feedback for optimization"""
         print("\n💭 Manual Feedback Submission")
         print("Enter your feedback (type 'END' on a new line to finish):")
-        
+
         lines = []
         while True:
             line = input()
             if line.strip().upper() == "END":
                 break
             lines.append(line)
-        
+
         feedback = "\n".join(lines).strip()
-        
+
         if not feedback:
             print("❌ No feedback provided.\n")
             return
-        
+
         print("\nProcessing feedback...")
         result = self.system.request_instruction_update(feedback, severity="moderate")
-        
+
         if result.get("success"):
             print("✅ Feedback processed and instructions updated!")
             if result.get("new_version"):
                 print(f"   New version: {result['new_version']}")
         else:
-            print(f"⚠️  Feedback processed but optimization failed: {result.get('message', 'Unknown error')}")
+            print(
+                f"⚠️  Feedback processed but optimization failed: {result.get('message', 'Unknown error')}"
+            )
         print()
 
     def clear_history(self):
         """Clear conversation history"""
         self.conversation_history = []
         print("\n🗑️  Conversation history cleared.\n")
-    
+
     def analyze_feedback_context(self):
         """Analyze conversation context and extract rules"""
         if not self.conversation_history:
             print("\n❌ No conversation history available for analysis.\n")
             return
-        
+
         print("\n🔍 Analyzing conversation context...")
         print("This may take a moment...\n")
-        
+
         # Perform context analysis
         result = self.system.analyze_feedback_context(
             self.conversation_history,
             focus_recent=10,
             min_confidence=0.6,
-            auto_apply=False  # Don't auto-apply, let user review first
+            auto_apply=False,  # Don't auto-apply, let user review first
         )
-        
+
         if not result.get("success"):
             print(f"❌ Analysis failed: {result.get('message', 'Unknown error')}\n")
             return
-        
+
         # Display the formatted analysis
         print(result["formatted_display"])
         print()
-        
+
         # Ask if user wants to apply these rules
         if result.get("rules_count", 0) > 0 or result.get("dont_rules_count", 0) > 0:
-            apply = input("\n💡 Apply these rules to system instructions? (y/n): ").lower().strip()
-            
-            if apply == 'y':
+            apply = (
+                input("\n💡 Apply these rules to system instructions? (y/n): ")
+                .lower()
+                .strip()
+            )
+
+            if apply == "y":
                 print("\n📝 Applying rules...")
                 apply_result = self.system._apply_context_rules(
-                    result["instruction_updates"],
-                    result["analysis"]
+                    result["instruction_updates"], result["analysis"]
                 )
-                
+
                 if apply_result.get("success"):
                     print("✅ Rules applied successfully!")
                     if apply_result.get("optimization_result", {}).get("success"):
@@ -210,18 +221,20 @@ class TerminalChatbot:
                     else:
                         print("⚠️  Rules logged for review.")
                 else:
-                    print(f"❌ Failed to apply rules: {apply_result.get('message', 'Unknown error')}")
+                    print(
+                        f"❌ Failed to apply rules: {apply_result.get('message', 'Unknown error')}"
+                    )
             else:
                 print("\n📋 Rules not applied. You can review them above.")
         else:
             print("\n💭 No significant rules extracted from conversation.")
-        
+
         print()
 
     def process_command(self, command: str) -> bool:
         """Process special commands. Returns True if should continue, False if should quit"""
         command = command.lower().strip()
-        
+
         if command == "/quit" or command == "/exit":
             return False
         elif command == "/help":
@@ -241,54 +254,56 @@ class TerminalChatbot:
         else:
             print(f"❓ Unknown command: {command}")
             print("   Type /help to see available commands.\n")
-        
+
         return True
 
     def chat(self, user_input: str):
         """Process a chat message"""
         # Add to conversation history
-        self.conversation_history.append({
-            "role": "user",
-            "content": user_input
-        })
-        
+        self.conversation_history.append({"role": "user", "content": user_input})
+
         # Execute with conversation context
         print("🤔 Thinking...")
         result = self.system.execute(
             user_input,
-            conversation_context=self.conversation_history[-5:]  # Last 5 messages for context
+            conversation_context=self.conversation_history[
+                -5:
+            ],  # Last 5 messages for context
         )
-        
+
         # Display the response
         output = result["output"]
         print(f"\n🤖 Bot: {output}\n")
-        
+
         # Add bot response to history
-        self.conversation_history.append({
-            "role": "assistant",
-            "content": output
-        })
-        
+        self.conversation_history.append({"role": "assistant", "content": output})
+
         # Show correction detection info if relevant
         if result.get("correction_detected"):
             confidence = result.get("correction_confidence", 0)
-            print(f"🔍 Note: Implicit correction detected (confidence: {confidence:.2f})")
+            print(
+                f"🔍 Note: Implicit correction detected (confidence: {confidence:.2f})"
+            )
             print("    The system is learning from your feedback!")
             if result.get("optimization_attempted"):
                 opt_result = result.get("optimization_result", {})
                 if opt_result.get("success"):
                     print("    ✨ Instructions updated based on your correction!")
             print()
-        
+
         # Show validation and optimization info if relevant
         if not result["validation_passed"]:
             print("⚠️  Note: Response failed validation")
             if result.get("optimization_attempted"):
                 opt_result = result.get("optimization_result", {})
                 if opt_result.get("success"):
-                    print("✨ System learned from this failure and updated instructions!")
+                    print(
+                        "✨ System learned from this failure and updated instructions!"
+                    )
                 else:
-                    print(f"❌ Optimization failed: {opt_result.get('message', 'Unknown error')}")
+                    print(
+                        f"❌ Optimization failed: {opt_result.get('message', 'Unknown error')}"
+                    )
             print()
 
     def run(self):
@@ -296,18 +311,18 @@ class TerminalChatbot:
         self.running = True
         self.show_banner()
         self.show_help()
-        
+
         print("💬 Start chatting! (Type /help for commands, /quit to exit)\n")
-        
+
         try:
             while self.running:
                 try:
                     # Get user input
                     user_input = input("You: ").strip()
-                    
+
                     if not user_input:
                         continue
-                    
+
                     # Check if it's a command
                     if user_input.startswith("/"):
                         if not self.process_command(user_input):
@@ -315,14 +330,14 @@ class TerminalChatbot:
                     else:
                         # Regular chat message
                         self.chat(user_input)
-                
+
                 except KeyboardInterrupt:
                     print("\n\n👋 Interrupted by user.")
                     break
                 except Exception as e:
                     print(f"\n❌ Error: {e}")
                     print("Please try again or type /quit to exit.\n")
-        
+
         finally:
             print("\n👋 Goodbye! Thanks for chatting!\n")
 
@@ -338,13 +353,13 @@ def main():
         print("   1. Create a .env file in the project root")
         print("   2. Add: DEEPSEEK_API_KEY=your_api_key_here")
         print("   3. Optionally add: DEEPSEEK_BASE_URL=https://api.deepseek.com/v1\n")
-        
+
         response = input("Continue with mock model? (y/n): ").lower().strip()
-        if response != 'y':
+        if response != "y":
             print("Exiting...")
             return
         print()
-    
+
     # Create and run chatbot
     chatbot = TerminalChatbot()
     chatbot.run()

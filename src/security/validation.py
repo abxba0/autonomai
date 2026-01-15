@@ -209,9 +209,11 @@ class SecurityValidator:
                 sanitized[key] = SecurityValidator.sanitize_dict(value)
             elif isinstance(value, list):
                 sanitized[key] = [
-                    SecurityValidator.sanitize_input(item)
-                    if isinstance(item, str)
-                    else item
+                    (
+                        SecurityValidator.sanitize_input(item)
+                        if isinstance(item, str)
+                        else item
+                    )
                     for item in value
                 ]
             else:

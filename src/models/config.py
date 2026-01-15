@@ -22,7 +22,7 @@ class SystemConfig:
     critic_model: str = "claude-3-haiku-20240307"
     temperature_main: float = 0.7
     temperature_critic: float = 0.3
-    
+
     # Provider Configuration
     # Supported providers: "anthropic", "openai", "google", "deepseek", "openrouter"
     # If not specified, will auto-detect from model name
@@ -55,7 +55,7 @@ class SystemConfig:
     base_prompt_tokens: int = 2000
     semantic_similarity_threshold: float = 0.7
     use_semantic_filtering: bool = True
-    
+
     # Semantic De-duplication (Phase 1)
     enable_semantic_deduplication: bool = True
     rule_similarity_threshold: float = 0.8  # Higher threshold for rules than failures
@@ -71,36 +71,40 @@ class SystemConfig:
     # Implicit Feedback / Correction Detection
     enable_correction_detection: bool = True
     correction_detection_confidence_threshold: float = 0.7
-    
+
     # Consensus Critic / Judge Pattern (Phase 2)
     enable_judge_model: bool = True
-    judge_approval_required: bool = True  # Require judge approval before applying changes
-    
+    judge_approval_required: bool = (
+        True  # Require judge approval before applying changes
+    )
+
     # Confidence-Based Throttling (Phase 4)
     enable_confidence_throttling: bool = True
     confidence_threshold: float = 0.7  # Minimum confidence to auto-apply changes
-    
+
     # Automated Regression Testing / Golden Suite (Phase 3)
     enable_regression_testing: bool = True
     golden_dataset_file: str = "golden_dataset.json"
     golden_dataset_max_size: int = 100
     regression_test_sample_size: int = 10  # Number of tests to run on each update
     regression_pass_threshold: float = 0.9  # Minimum pass rate to apply changes
-    
+
     # Multi-Modal Optimization (Phase 5)
     enable_multimodal: bool = False
-    supported_modalities: List[str] = field(default_factory=lambda: ["text", "vision", "audio"])
+    supported_modalities: List[str] = field(
+        default_factory=lambda: ["text", "vision", "audio"]
+    )
     vision_model: Optional[str] = None  # Specific model for vision tasks
     audio_model: Optional[str] = None  # Specific model for audio tasks
     multimodal_validation_timeout: int = 60  # Longer timeout for multi-modal
-    
+
     # Knowledge Graph for Rules (Phase 6)
     enable_knowledge_graph: bool = False
     rule_graph_file: str = "rule_graph.json"
     enable_rule_inheritance: bool = True
     enable_rule_supersession: bool = True
     max_rule_depth: int = 5  # Maximum depth for rule hierarchy
-    
+
     # Multi-Tenant Isolation (Phase 7)
     enable_multi_tenant: bool = False
     default_tenant_id: str = "default"
@@ -136,14 +140,14 @@ class FailureEntry:
     # Context
     user_query: Optional[str] = None
     conversation_context: Optional[str] = None
-    
+
     # Multi-Modal Support (Phase 5)
     modality: str = "text"  # text, vision, audio, multi-modal
     vision_input_refs: List[str] = field(default_factory=list)  # File paths or URLs
     audio_input_refs: List[str] = field(default_factory=list)  # File paths or URLs
     vision_validation_errors: Optional[Dict[str, Any]] = None
     audio_validation_errors: Optional[Dict[str, Any]] = None
-    
+
     # Multi-Tenant Support (Phase 7)
     tenant_id: str = "default"
 

@@ -126,9 +126,9 @@ def test_rate_limiting():
             allowed_count += 1
 
     # Should allow burst limit + some requests
-    assert 2 <= allowed_count <= 5, (
-        f"Rate limiting not working correctly: allowed {allowed_count}"
-    )
+    assert (
+        2 <= allowed_count <= 5
+    ), f"Rate limiting not working correctly: allowed {allowed_count}"
     print(f"✓ Rate limiting working: allowed {allowed_count}/10 requests")
 
     print()
@@ -162,9 +162,9 @@ def test_api_key_management():
     assert revoked, "API key revocation failed"
 
     validated_key = api_key_manager.validate_api_key(api_key.key)
-    assert validated_key is None or not validated_key.is_active, (
-        "Revoked key should not be valid"
-    )
+    assert (
+        validated_key is None or not validated_key.is_active
+    ), "Revoked key should not be valid"
     print("✓ API key revocation successful")
 
     print()

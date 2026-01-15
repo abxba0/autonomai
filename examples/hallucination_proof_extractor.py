@@ -26,7 +26,9 @@ from src.core.validator import ValidationResult
 
 
 # Constants for validation
-MIN_WORD_LENGTH_FOR_MATCHING = 2  # Minimum word length to consider in multi-word validation
+MIN_WORD_LENGTH_FOR_MATCHING = (
+    2  # Minimum word length to consider in multi-word validation
+)
 PHONE_MIN_DIGITS = 10  # Minimum number of digits for a valid phone number
 PHONE_MAX_DIGITS = 15  # Maximum number of digits for a valid phone number
 
@@ -66,7 +68,9 @@ class GroundingValidator(CustomValidator):
         self.source_text = source_text
         super().__init__("GroundingValidator", self.validate_grounding)
 
-    def validate_grounding(self, output: str, context: Optional[Dict[str, Any]] = None) -> ValidationResult:
+    def validate_grounding(
+        self, output: str, context: Optional[Dict[str, Any]] = None
+    ) -> ValidationResult:
         """
         Validate that all extracted values actually exist in the source text.
         """
@@ -78,7 +82,7 @@ class GroundingValidator(CustomValidator):
                 passed=False,
                 validator_name=self.name,
                 error_message="Output is not valid JSON",
-                error_details={"error": "Could not parse JSON"}
+                error_details={"error": "Could not parse JSON"},
             )
 
         hallucinations = []
@@ -95,22 +99,26 @@ class GroundingValidator(CustomValidator):
             # For numeric values, be more flexible (allow for formatting differences)
             if self._is_numeric(value_str):
                 if not self._check_numeric_in_source(value_str):
-                    hallucinations.append({
-                        "field": field,
-                        "value": value_str,
-                        "reason": "Numeric value not found in source"
-                    })
+                    hallucinations.append(
+                        {
+                            "field": field,
+                            "value": value_str,
+                            "reason": "Numeric value not found in source",
+                        }
+                    )
                 else:
                     verified_fields.append(field)
             else:
                 # For text values, check if it appears in source (case-insensitive)
                 # Also handle partial matches and common variations
                 if not self._check_text_in_source(value_str):
-                    hallucinations.append({
-                        "field": field,
-                        "value": value_str,
-                        "reason": "Text value not found in source"
-                    })
+                    hallucinations.append(
+                        {
+                            "field": field,
+                            "value": value_str,
+                            "reason": "Text value not found in source",
+                        }
+                    )
                 else:
                     verified_fields.append(field)
 
@@ -122,8 +130,8 @@ class GroundingValidator(CustomValidator):
                 error_details={
                     "hallucinations": hallucinations,
                     "verified_fields": verified_fields,
-                    "total_fields": len(data)
-                }
+                    "total_fields": len(data),
+                },
             )
 
         return ValidationResult(
@@ -132,14 +140,14 @@ class GroundingValidator(CustomValidator):
             error_message=None,
             error_details={
                 "verified_fields": verified_fields,
-                "total_fields": len(data)
-            }
+                "total_fields": len(data),
+            },
         )
 
     def _is_numeric(self, value_str: str) -> bool:
         """Check if a string represents a numeric value."""
         # Remove common formatting characters
-        cleaned = value_str.replace('$', '').replace(',', '').replace('%', '').strip()
+        cleaned = value_str.replace("$", "").replace(",", "").replace("%", "").strip()
         try:
             float(cleaned)
             return True
@@ -149,7 +157,7 @@ class GroundingValidator(CustomValidator):
     def _check_numeric_in_source(self, value_str: str) -> bool:
         """Check if a numeric value exists in source (allowing for format variations)."""
         # Extract the numeric part
-        cleaned = value_str.replace('$', '').replace(',', '').replace('%', '').strip()
+        cleaned = value_str.replace("$", "").replace(",", "").replace("%", "").strip()
         try:
             num = float(cleaned)
         except ValueError:
@@ -185,8 +193,8 @@ class GroundingValidator(CustomValidator):
         if len(words) > 1:
             # For multi-word values, check if all significant words appear
             all_words_found = all(
-                word.lower() in self.source_text.lower() 
-                for word in words 
+                word.lower() in self.source_text.lower()
+                for word in words
                 if len(word) > MIN_WORD_LENGTH_FOR_MATCHING
             )
             if all_words_found:
@@ -194,12 +202,12 @@ class GroundingValidator(CustomValidator):
 
         # Check for phone number variations with proper constraints
         # Match strings that look like phone numbers: contain mostly digits and phone formatting chars
-        if re.match(r'^[\d\(\)\-\s\.]+$', value_clean):
+        if re.match(r"^[\d\(\)\-\s\.]+$", value_clean):
             # Extract just digits
-            digits = re.sub(r'\D', '', value_clean)
+            digits = re.sub(r"\D", "", value_clean)
             # Validate digit count is within reasonable phone number range
             if PHONE_MIN_DIGITS <= len(digits) <= PHONE_MAX_DIGITS:
-                source_digits = re.sub(r'\D', '', self.source_text)
+                source_digits = re.sub(r"\D", "", self.source_text)
                 if digits in source_digits:
                     return True
 
@@ -285,7 +293,7 @@ Return ONLY valid JSON with the extracted data. Do not include any explanatory t
 
     print("\n📤 Extracted Data:")
     try:
-        data = json.loads(result1['output'])
+        data = json.loads(result1["output"])
         for key, value in data.items():
             print(f"   {key}: {value}")
     except json.JSONDecodeError:
@@ -293,23 +301,25 @@ Return ONLY valid JSON with the extracted data. Do not include any explanatory t
 
     print(f"\n✓ Validation Passed: {result1['validation_passed']}")
 
-    if not result1['validation_passed']:
+    if not result1["validation_passed"]:
         print("\n⚠️  HALLUCINATIONS DETECTED!")
 
         # Show validation errors
-        for val_result in result1.get('validation_results', []):
+        for val_result in result1.get("validation_results", []):
             if not val_result.passed and val_result.error_details:
                 details = val_result.error_details
-                if 'hallucinations' in details:
+                if "hallucinations" in details:
                     print(f"\n   Hallucinated fields:")
-                    for h in details['hallucinations']:
+                    for h in details["hallucinations"]:
                         print(f"     - {h['field']}: '{h['value']}'")
                         print(f"       Reason: {h['reason']}")
 
-        if result1.get('optimization_attempted'):
-            opt_result = result1['optimization_result']
-            print(f"\n🔄 Auto-optimization triggered: {opt_result.get('success', False)}")
-            if opt_result.get('success'):
+        if result1.get("optimization_attempted"):
+            opt_result = result1["optimization_result"]
+            print(
+                f"\n🔄 Auto-optimization triggered: {opt_result.get('success', False)}"
+            )
+            if opt_result.get("success"):
                 print("   ✓ Instructions updated to improve grounding!")
                 print(f"   Changes: {opt_result.get('diff_summary', 'N/A')}")
 
@@ -317,7 +327,9 @@ Return ONLY valid JSON with the extracted data. Do not include any explanatory t
         print("\n✅ All extracted values are grounded in the source text!")
 
     # If optimization occurred, try again
-    if result1.get('optimization_attempted') and result1['optimization_result'].get('success'):
+    if result1.get("optimization_attempted") and result1["optimization_result"].get(
+        "success"
+    ):
         print("\n" + "=" * 70)
         print("ATTEMPT 2: Re-extraction with Optimized Instructions")
         print("=" * 70)
@@ -326,7 +338,7 @@ Return ONLY valid JSON with the extracted data. Do not include any explanatory t
 
         print("\n📤 Extracted Data:")
         try:
-            data = json.loads(result2['output'])
+            data = json.loads(result2["output"])
             for key, value in data.items():
                 print(f"   {key}: {value}")
         except json.JSONDecodeError:
@@ -334,14 +346,14 @@ Return ONLY valid JSON with the extracted data. Do not include any explanatory t
 
         print(f"\n✓ Validation Passed: {result2['validation_passed']}")
 
-        if result2['validation_passed']:
+        if result2["validation_passed"]:
             print("\n🎉 SUCCESS! All data is now properly grounded!")
         else:
             print("\n⚠️  Still detecting issues. Further optimization may be needed.")
 
-            if result2.get('optimization_attempted'):
-                opt_result = result2['optimization_result']
-                if opt_result.get('success'):
+            if result2.get("optimization_attempted"):
+                opt_result = result2["optimization_result"]
+                if opt_result.get("success"):
                     print("   ✓ Instructions updated again")
 
     # Show version history
@@ -362,7 +374,8 @@ Return ONLY valid JSON with the extracted data. Do not include any explanatory t
     print("\n" + "=" * 70)
     print("💡 KEY TAKEAWAYS")
     print("=" * 70)
-    print("""
+    print(
+        """
 This example demonstrates:
 
 1. **Grounding Validation**: Every extracted value is checked against the source
@@ -385,7 +398,8 @@ This example demonstrates:
    - Quote directly from source
    - Not infer or assume values
    - Only extract what's explicitly present
-""")
+"""
+    )
 
     print("\n" + "=" * 70)
     print("Example Complete!")

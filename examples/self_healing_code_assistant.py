@@ -37,49 +37,51 @@ class PythonCodeValidator(CustomValidator):
     Validator that checks if generated Python code is syntactically valid
     and follows basic style guidelines.
     """
-    
+
     # Style rules configuration
     STYLE_RULES = {
         "no_tabs": {
             "enabled": True,
             "severity": "moderate",
-            "message": "Use spaces instead of tabs for indentation"
+            "message": "Use spaces instead of tabs for indentation",
         },
         "require_docstrings": {
             "enabled": True,
             "severity": "moderate",
-            "message": "Functions should have docstrings"
+            "message": "Functions should have docstrings",
         },
         "max_line_length": {
             "enabled": True,
             "severity": "low",
             "limit": 120,
-            "message": "Lines should not exceed 120 characters"
+            "message": "Lines should not exceed 120 characters",
         },
         "no_bare_except": {
             "enabled": True,
             "severity": "high",
-            "message": "Avoid bare except clauses - specify exception types"
+            "message": "Avoid bare except clauses - specify exception types",
         },
     }
 
     def __init__(self, check_style: bool = True):
         """
         Initialize the Python code validator.
-        
+
         Args:
             check_style: If True, also check for style issues
         """
         self.check_style = check_style
         super().__init__("PythonCodeValidator", self.validate_python_code)
 
-    def validate_python_code(self, output: str, context: Optional[Dict[str, Any]] = None) -> ValidationResult:
+    def validate_python_code(
+        self, output: str, context: Optional[Dict[str, Any]] = None
+    ) -> ValidationResult:
         """
         Validate that the output contains valid Python code.
         """
         # Extract code from output (handle markdown code blocks)
         code = self._extract_code(output)
-        
+
         if not code:
             return ValidationResult(
                 passed=False,
@@ -87,8 +89,8 @@ class PythonCodeValidator(CustomValidator):
                 error_message="No Python code found in output",
                 error_details={
                     "error": "Output does not contain Python code",
-                    "suggestion": "Ensure output includes Python code in ```python code blocks or as plain text"
-                }
+                    "suggestion": "Ensure output includes Python code in ```python code blocks or as plain text",
+                },
             )
 
         violations = []
@@ -96,12 +98,14 @@ class PythonCodeValidator(CustomValidator):
         # Check 1: Syntax validation using AST
         syntax_valid, syntax_error = self._check_syntax(code)
         if not syntax_valid:
-            violations.append({
-                "type": "syntax_error",
-                "severity": "critical",
-                "message": f"Python syntax error: {syntax_error}",
-                "details": syntax_error
-            })
+            violations.append(
+                {
+                    "type": "syntax_error",
+                    "severity": "critical",
+                    "message": f"Python syntax error: {syntax_error}",
+                    "details": syntax_error,
+                }
+            )
 
         # Check 2: Style validation (if enabled and syntax is valid)
         if self.check_style and syntax_valid:
@@ -114,13 +118,13 @@ class PythonCodeValidator(CustomValidator):
             severity_order = {"low": 1, "moderate": 2, "high": 3, "critical": 4}
             max_severity = max(
                 (severity_order.get(v.get("severity", "low"), 1) for v in violations),
-                default=1
+                default=1,
             )
             highest_severity = next(
                 (sev for sev, val in severity_order.items() if val == max_severity),
-                "low"
+                "low",
             )
-            
+
             return ValidationResult(
                 passed=False,
                 validator_name=self.name,
@@ -129,8 +133,8 @@ class PythonCodeValidator(CustomValidator):
                     "violations": violations,
                     "total_violations": len(violations),
                     "highest_severity": highest_severity,
-                    "code_snippet": code[:200] + ("..." if len(code) > 200 else "")
-                }
+                    "code_snippet": code[:200] + ("..." if len(code) > 200 else ""),
+                },
             )
 
         return ValidationResult(
@@ -140,31 +144,31 @@ class PythonCodeValidator(CustomValidator):
             error_details={
                 "status": "valid",
                 "code_lines": len(code.splitlines()),
-                "message": "Code is syntactically valid and follows style guidelines"
-            }
+                "message": "Code is syntactically valid and follows style guidelines",
+            },
         )
 
     def _extract_code(self, output: str) -> str:
         """Extract Python code from output, handling markdown code blocks."""
         # Try to find code in markdown code blocks first
-        code_block_pattern = r'```(?:python)?\s*\n(.*?)```'
+        code_block_pattern = r"```(?:python)?\s*\n(.*?)```"
         matches = re.findall(code_block_pattern, output, re.DOTALL)
-        
+
         if matches:
             # Use the first code block found
             return matches[0].strip()
-        
+
         # If no code blocks, check if the entire output looks like code
         # (starts with def, class, import, or has proper indentation)
-        if re.match(r'^\s*(def|class|import|from|#)', output.strip(), re.MULTILINE):
+        if re.match(r"^\s*(def|class|import|from|#)", output.strip(), re.MULTILINE):
             return output.strip()
-        
+
         return ""
 
     def _check_syntax(self, code: str) -> tuple[bool, str]:
         """
         Check if code is syntactically valid using Python's AST parser.
-        
+
         Returns:
             Tuple of (is_valid, error_message)
         """
@@ -186,23 +190,27 @@ class PythonCodeValidator(CustomValidator):
 
         # Check for tabs
         if self.STYLE_RULES["no_tabs"]["enabled"]:
-            if '\t' in code:
-                issues.append({
-                    "type": "style_issue",
-                    "severity": self.STYLE_RULES["no_tabs"]["severity"],
-                    "message": self.STYLE_RULES["no_tabs"]["message"],
-                    "rule": "no_tabs"
-                })
+            if "\t" in code:
+                issues.append(
+                    {
+                        "type": "style_issue",
+                        "severity": self.STYLE_RULES["no_tabs"]["severity"],
+                        "message": self.STYLE_RULES["no_tabs"]["message"],
+                        "rule": "no_tabs",
+                    }
+                )
 
         # Check for bare except clauses
         if self.STYLE_RULES["no_bare_except"]["enabled"]:
-            if re.search(r'except\s*:', code):
-                issues.append({
-                    "type": "style_issue",
-                    "severity": self.STYLE_RULES["no_bare_except"]["severity"],
-                    "message": self.STYLE_RULES["no_bare_except"]["message"],
-                    "rule": "no_bare_except"
-                })
+            if re.search(r"except\s*:", code):
+                issues.append(
+                    {
+                        "type": "style_issue",
+                        "severity": self.STYLE_RULES["no_bare_except"]["severity"],
+                        "message": self.STYLE_RULES["no_bare_except"]["message"],
+                        "rule": "no_bare_except",
+                    }
+                )
 
         # Check for docstrings in functions
         if self.STYLE_RULES["require_docstrings"]["enabled"]:
@@ -213,12 +221,16 @@ class PythonCodeValidator(CustomValidator):
                         # Check if function has a docstring
                         docstring = ast.get_docstring(node)
                         if not docstring:
-                            issues.append({
-                                "type": "style_issue",
-                                "severity": self.STYLE_RULES["require_docstrings"]["severity"],
-                                "message": f"Function '{node.name}' is missing a docstring",
-                                "rule": "require_docstrings"
-                            })
+                            issues.append(
+                                {
+                                    "type": "style_issue",
+                                    "severity": self.STYLE_RULES["require_docstrings"][
+                                        "severity"
+                                    ],
+                                    "message": f"Function '{node.name}' is missing a docstring",
+                                    "rule": "require_docstrings",
+                                }
+                            )
             except Exception:
                 # If we can't parse, skip docstring check
                 pass
@@ -227,17 +239,20 @@ class PythonCodeValidator(CustomValidator):
         if self.STYLE_RULES["max_line_length"]["enabled"]:
             max_length = self.STYLE_RULES["max_line_length"]["limit"]
             long_lines = [
-                (i + 1, len(line)) for i, line in enumerate(lines) 
+                (i + 1, len(line))
+                for i, line in enumerate(lines)
                 if len(line) > max_length
             ]
             if long_lines:
-                issues.append({
-                    "type": "style_issue",
-                    "severity": self.STYLE_RULES["max_line_length"]["severity"],
-                    "message": f"{len(long_lines)} line(s) exceed {max_length} characters",
-                    "rule": "max_line_length",
-                    "details": f"Lines: {', '.join(str(line_num) for line_num, _ in long_lines[:3])}"
-                })
+                issues.append(
+                    {
+                        "type": "style_issue",
+                        "severity": self.STYLE_RULES["max_line_length"]["severity"],
+                        "message": f"{len(long_lines)} line(s) exceed {max_length} characters",
+                        "rule": "max_line_length",
+                        "details": f"Lines: {', '.join(str(line_num) for line_num, _ in long_lines[:3])}",
+                    }
+                )
 
         return issues
 
@@ -248,24 +263,26 @@ CODE_GENERATION_TASKS = [
         "name": "Simple Calculator Function",
         "description": "Create a Python function that adds two numbers",
         "prompt": "Write a Python function called 'add_numbers' that takes two parameters and returns their sum.",
-        "category": "basic"
+        "category": "basic",
     },
     {
         "name": "List Processing",
         "description": "Create a function that filters even numbers from a list",
         "prompt": "Write a Python function called 'filter_even_numbers' that takes a list of integers and returns a new list containing only the even numbers.",
-        "category": "intermediate"
+        "category": "intermediate",
     },
     {
         "name": "String Manipulation",
         "description": "Create a function that reverses words in a sentence",
         "prompt": "Write a Python function called 'reverse_words' that takes a sentence (string) and returns the sentence with each word reversed, but maintaining the word order.",
-        "category": "intermediate"
+        "category": "intermediate",
     },
 ]
 
 
-def run_code_generation_test(system: SelfOptimizingSystem, test_case: Dict[str, str], attempt_num: int = 1):
+def run_code_generation_test(
+    system: SelfOptimizingSystem, test_case: Dict[str, str], attempt_num: int = 1
+):
     """
     Run a single code generation test case.
     """
@@ -278,23 +295,25 @@ def run_code_generation_test(system: SelfOptimizingSystem, test_case: Dict[str, 
     print(f"   \"{test_case['prompt']}\"")
     print()
 
-    result = system.execute(test_case['prompt'])
+    result = system.execute(test_case["prompt"])
 
     print(f"🤖 Generated Code:")
     # Extract and display the code
-    code_output = result['output']
+    code_output = result["output"]
     print("-" * 70)
     print(code_output[:500] + ("..." if len(code_output) > 500 else ""))
     print("-" * 70)
     print()
 
     # Check validation result
-    if result['validation_passed']:
+    if result["validation_passed"]:
         print("✅ CODE VALIDATION: PASSED")
-        print("   The generated code is syntactically valid and follows style guidelines!")
-        
+        print(
+            "   The generated code is syntactically valid and follows style guidelines!"
+        )
+
         # Show validation details
-        for val_result in result.get('validation_results', []):
+        for val_result in result.get("validation_results", []):
             if val_result.passed and val_result.error_details:
                 details = val_result.error_details
                 print(f"   ✓ Code lines: {details.get('code_lines', 'N/A')}")
@@ -302,26 +321,32 @@ def run_code_generation_test(system: SelfOptimizingSystem, test_case: Dict[str, 
     else:
         print("❌ CODE VALIDATION: FAILED")
         print("   ⚠️  CODE QUALITY ISSUES DETECTED!")
-        
+
         # Show violation details
-        for val_result in result.get('validation_results', []):
+        for val_result in result.get("validation_results", []):
             if not val_result.passed and val_result.error_details:
-                violations = val_result.error_details.get('violations', [])
+                violations = val_result.error_details.get("violations", [])
                 print(f"\n   Found {len(violations)} issue(s):")
                 for i, violation in enumerate(violations, 1):
-                    print(f"   {i}. [{violation.get('severity', 'unknown').upper()}] {violation['type']}")
+                    print(
+                        f"   {i}. [{violation.get('severity', 'unknown').upper()}] {violation['type']}"
+                    )
                     print(f"      {violation['message']}")
-                    if 'details' in violation:
+                    if "details" in violation:
                         print(f"      Details: {violation['details']}")
 
         # Check if optimization was triggered
-        if result.get('optimization_attempted'):
-            opt_result = result['optimization_result']
-            print(f"\n🔄 SELF-HEALING: {'SUCCESS' if opt_result.get('success') else 'FAILED'}")
-            
-            if opt_result.get('success'):
+        if result.get("optimization_attempted"):
+            opt_result = result["optimization_result"]
+            print(
+                f"\n🔄 SELF-HEALING: {'SUCCESS' if opt_result.get('success') else 'FAILED'}"
+            )
+
+            if opt_result.get("success"):
                 print("   ✓ Code generation instructions have been updated!")
-                print(f"   ✓ Changes: {opt_result.get('diff_summary', 'Instructions improved for better code quality')}")
+                print(
+                    f"   ✓ Changes: {opt_result.get('diff_summary', 'Instructions improved for better code quality')}"
+                )
                 print("   ✓ System will now generate better code in future attempts")
             else:
                 print(f"   ✗ Reason: {opt_result.get('message', 'Unknown error')}")
@@ -348,7 +373,7 @@ def main():
 
     # Initialize system with code generation configuration
     print("\n🔧 Initializing code assistant...")
-    
+
     config = SystemConfig(
         main_model="gpt-4o-mini",
         main_model_provider="openai",
@@ -361,7 +386,7 @@ def main():
     )
 
     system = SelfOptimizingSystem(config)
-    
+
     print(f"   ✓ System initialized")
 
     # Add the Python code validator
@@ -380,9 +405,9 @@ def main():
     baseline_task = {
         "name": "Hello World",
         "prompt": "Write a Python function that prints 'Hello, World!' with a docstring.",
-        "category": "basic"
+        "category": "basic",
     }
-    
+
     baseline = run_code_generation_test(system, baseline_task, attempt_num=1)
 
     # Run code generation tests
@@ -397,12 +422,14 @@ def main():
 
     for i, test_case in enumerate(CODE_GENERATION_TASKS, 1):
         result = run_code_generation_test(system, test_case, attempt_num=i)
-        
-        if result['validation_passed']:
+
+        if result["validation_passed"]:
             successful_generations += 1
         else:
             failed_generations += 1
-            if result.get('optimization_attempted') and result['optimization_result'].get('success'):
+            if result.get("optimization_attempted") and result[
+                "optimization_result"
+            ].get("success"):
                 optimizations_performed += 1
 
         # Small delay indication between tasks
@@ -413,10 +440,12 @@ def main():
     print("\n" + "=" * 70)
     print("📊 CODE GENERATION ASSESSMENT REPORT")
     print("=" * 70)
-    
+
     total_tests = len(CODE_GENERATION_TASKS)
-    success_rate = (successful_generations / total_tests * 100) if total_tests > 0 else 0
-    
+    success_rate = (
+        (successful_generations / total_tests * 100) if total_tests > 0 else 0
+    )
+
     print(f"\n📈 Test Results:")
     print(f"   • Total Generation Attempts: {total_tests}")
     print(f"   • Successful Generations: {successful_generations}")
@@ -424,7 +453,9 @@ def main():
     print(f"   • Success Rate: {success_rate:.1f}%")
     print(f"\n🔄 Self-Healing Activity:")
     print(f"   • Optimizations Performed: {optimizations_performed}")
-    print(f"   • Learning Status: {'ACTIVE' if optimizations_performed > 0 else 'NO ISSUES DETECTED'}")
+    print(
+        f"   • Learning Status: {'ACTIVE' if optimizations_performed > 0 else 'NO ISSUES DETECTED'}"
+    )
 
     # Show version history
     print(f"\n📚 Improvement History:")
@@ -441,7 +472,8 @@ def main():
     print("\n" + "=" * 70)
     print("💡 KEY TAKEAWAYS")
     print("=" * 70)
-    print("""
+    print(
+        """
 This example demonstrates practical AI code generation with quality assurance:
 
 1. **Syntax Validation**: Uses Python's AST parser to ensure generated code
@@ -484,7 +516,8 @@ This example demonstrates practical AI code generation with quality assurance:
    - Demonstrates LLMOps best practices
    - Enables safer AI-assisted development
    - Supports "shift-left" quality assurance
-""")
+"""
+    )
 
     print("\n" + "=" * 70)
     print("Example Complete!")

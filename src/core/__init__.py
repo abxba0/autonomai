@@ -13,7 +13,7 @@ from .multimodal_validator import (
     MultiModalValidator,
     VisionValidationResult,
     AudioValidationResult,
-    MockMultiModalValidator
+    MockMultiModalValidator,
 )
 
 # Phase 6: Knowledge Graph
@@ -25,7 +25,7 @@ from .tenant_manager import (
     TenantConfig,
     TenantContext,
     TenantAwareDataFilter,
-    MockTenantManager
+    MockTenantManager,
 )
 
 __all__ = [

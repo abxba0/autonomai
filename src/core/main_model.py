@@ -25,14 +25,14 @@ class MainModel:
         self.config = config
         self.instruction_manager = instruction_manager
         self.validation_pipeline = validation_pipeline or ValidationPipeline()
-        
+
         # Initialize correction detector if enabled
         self.correction_detector = None
         if config.enable_correction_detection:
             self.correction_detector = CorrectionDetector(
                 confidence_threshold=config.correction_detection_confidence_threshold
             )
-        
+
         # Track last response for correction detection
         self.last_response = None
 
@@ -45,7 +45,11 @@ class MainModel:
     def _initialize_model(self):
         """Initialize the language model with LangChain"""
         model_name = self.config.main_model.lower()
-        provider = self.config.main_model_provider.lower() if self.config.main_model_provider else None
+        provider = (
+            self.config.main_model_provider.lower()
+            if self.config.main_model_provider
+            else None
+        )
 
         # Detect provider from model name if not explicitly set
         if not provider:
@@ -87,7 +91,9 @@ class MainModel:
         try:
             from langchain_anthropic import ChatAnthropic
         except ImportError:
-            print("Warning: langchain-anthropic not installed. Install with: pip install langchain-anthropic")
+            print(
+                "Warning: langchain-anthropic not installed. Install with: pip install langchain-anthropic"
+            )
             return MockModel(self.config.main_model, self.config.temperature_main)
 
         api_key = os.getenv("ANTHROPIC_API_KEY")
@@ -106,7 +112,9 @@ class MainModel:
         try:
             from langchain_openai import ChatOpenAI
         except ImportError:
-            print("Warning: langchain-openai not installed. Install with: pip install langchain-openai")
+            print(
+                "Warning: langchain-openai not installed. Install with: pip install langchain-openai"
+            )
             return MockModel(self.config.main_model, self.config.temperature_main)
 
         api_key = os.getenv("OPENAI_API_KEY")
@@ -125,7 +133,9 @@ class MainModel:
         try:
             from langchain_google_genai import ChatGoogleGenerativeAI
         except ImportError:
-            print("Warning: langchain-google-genai not installed. Install with: pip install langchain-google-genai")
+            print(
+                "Warning: langchain-google-genai not installed. Install with: pip install langchain-google-genai"
+            )
             return MockModel(self.config.main_model, self.config.temperature_main)
 
         api_key = os.getenv("GOOGLE_API_KEY")
@@ -144,12 +154,14 @@ class MainModel:
         try:
             from langchain_openai import ChatOpenAI
         except ImportError:
-            print("Warning: langchain-openai not installed. Install with: pip install langchain-openai")
+            print(
+                "Warning: langchain-openai not installed. Install with: pip install langchain-openai"
+            )
             return MockModel(self.config.main_model, self.config.temperature_main)
 
         api_key = os.getenv("DEEPSEEK_API_KEY")
         base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
-        
+
         if not api_key:
             print("Warning: DEEPSEEK_API_KEY not found. Using mock model.")
             return MockModel(self.config.main_model, self.config.temperature_main)
@@ -166,11 +178,13 @@ class MainModel:
         try:
             from langchain_openai import ChatOpenAI
         except ImportError:
-            print("Warning: langchain-openai not installed. Install with: pip install langchain-openai")
+            print(
+                "Warning: langchain-openai not installed. Install with: pip install langchain-openai"
+            )
             return MockModel(self.config.main_model, self.config.temperature_main)
 
         api_key = os.getenv("OPENROUTER_API_KEY")
-        
+
         if not api_key:
             print("Warning: OPENROUTER_API_KEY not found. Using mock model.")
             return MockModel(self.config.main_model, self.config.temperature_main)
@@ -268,30 +282,31 @@ class MainModel:
 
         # Check for implicit corrections if enabled
         if self.correction_detector and self.last_response:
-            is_correction, confidence, correction_type = self.correction_detector.detect_correction(
-                user_query,
-                previous_response=self.last_response,
-                conversation_history=conversation_context
+            is_correction, confidence, correction_type = (
+                self.correction_detector.detect_correction(
+                    user_query,
+                    previous_response=self.last_response,
+                    conversation_history=conversation_context,
+                )
             )
-            
+
             if is_correction:
                 correction_detected = True
                 correction_confidence = confidence
-                
+
                 # Create failure entry for implicit feedback
-                correction_description = self.correction_detector.create_correction_description(
-                    user_query,
-                    correction_type,
-                    confidence,
-                    self.last_response
+                correction_description = (
+                    self.correction_detector.create_correction_description(
+                        user_query, correction_type, confidence, self.last_response
+                    )
                 )
-                
+
                 failure_entry = FailureEntry(
                     trigger_type="implicit_feedback",
                     failure_description=correction_description,
                     user_query=user_query,
                     last_model_output=self.last_response,
-                    severity="moderate"
+                    severity="moderate",
                 )
                 self.instruction_manager.add_failure(failure_entry)
 
@@ -306,26 +321,32 @@ class MainModel:
                     user_query, output, validation_results
                 )
                 self.instruction_manager.add_failure(failure_entry)
-        
+
         # Store current response for next correction detection
         self.last_response = output
-        
+
         # Phase 3: Add successful interactions to golden dataset
-        if (validation_passed and not correction_detected and 
-            self.config.enable_regression_testing and 
-            self.instruction_manager.golden_dataset and
-            self.validation_pipeline.validators):
-            
+        if (
+            validation_passed
+            and not correction_detected
+            and self.config.enable_regression_testing
+            and self.instruction_manager.golden_dataset
+            and self.validation_pipeline.validators
+        ):
+
             # Only add interactions that had validators and passed
             try:
-                validation_rules = [v.__class__.__name__ for v in self.validation_pipeline.validators]
+                validation_rules = [
+                    v.__class__.__name__ for v in self.validation_pipeline.validators
+                ]
                 self.instruction_manager.golden_dataset.add_interaction(
                     user_query=user_query,
                     output=output,
-                    instructions_version=self.instruction_manager.current_version or "unknown",
+                    instructions_version=self.instruction_manager.current_version
+                    or "unknown",
                     model_used=self.config.main_model,
                     validation_rules=validation_rules,
-                    tags=["auto_collected"]
+                    tags=["auto_collected"],
                 )
             except Exception as e:
                 # Don't fail if golden dataset collection fails
@@ -381,24 +402,31 @@ class MockModel:
 
     def invoke(self, messages: List) -> Any:
         """Mock invoke for LangChain compatibility"""
-        
+
         # Check if JSON is expected in the prompt
         prompt_text = ""
         for msg in messages:
-            if hasattr(msg, 'content'):
+            if hasattr(msg, "content"):
                 prompt_text += msg.content.lower()
-        
+
         # Determine response content based on prompt analysis
         # Note: This is a simple heuristic for testing. Real models would use more sophisticated logic.
         is_json_request = "json" in prompt_text and any(
             keyword in prompt_text for keyword in ["extract", "return", "output"]
         )
-        
+
         # Check if code generation is requested
         is_code_request = any(
-            keyword in prompt_text for keyword in ["write a python", "create a python", "python function", "def ", "function called"]
+            keyword in prompt_text
+            for keyword in [
+                "write a python",
+                "create a python",
+                "python function",
+                "def ",
+                "function called",
+            ]
         )
-        
+
         if is_code_request:
             # Return sample Python code based on the request
             if "add" in prompt_text or "sum" in prompt_text:

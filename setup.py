@@ -7,12 +7,12 @@ def read_requirements(filename):
     requirements_path = Path(__file__).parent / "requirements" / filename
     if not requirements_path.exists():
         return []
-    
-    with open(requirements_path, 'r') as f:
+
+    with open(requirements_path, "r") as f:
         return [
-            line.strip() 
-            for line in f 
-            if line.strip() and not line.startswith('#') and not line.startswith('-r')
+            line.strip()
+            for line in f
+            if line.strip() and not line.startswith("#") and not line.startswith("-r")
         ]
 
 

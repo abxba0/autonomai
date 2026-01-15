@@ -375,9 +375,11 @@ async def security_monitoring_middleware(request: Request, call_next):
 
             # Log the request
             log_security_event(
-                event_type=AuditEventType.QUERY_EXECUTED
-                if request.url.path == "/execute"
-                else AuditEventType.SECURITY_ALERT,
+                event_type=(
+                    AuditEventType.QUERY_EXECUTED
+                    if request.url.path == "/execute"
+                    else AuditEventType.SECURITY_ALERT
+                ),
                 severity=AuditSeverity.INFO,
                 user_id=user_id,
                 username=username,
@@ -473,9 +475,11 @@ async def login(
             event_type=AuditEventType.LOGIN_FAILURE,
             severity=AuditSeverity.WARNING,
             username=request.username,
-            ip_address=request.client.host
-            if hasattr(request, "client") and request.client
-            else None,
+            ip_address=(
+                request.client.host
+                if hasattr(request, "client") and request.client
+                else None
+            ),
             resource="login",
             action="login_attempt",
             details={"username": request.username},
@@ -506,9 +510,11 @@ async def login(
         severity=AuditSeverity.INFO,
         user_id=user.id,
         username=user.username,
-        ip_address=request.client.host
-        if hasattr(request, "client") and request.client
-        else None,
+        ip_address=(
+            request.client.host
+            if hasattr(request, "client") and request.client
+            else None
+        ),
         resource="login",
         action="login_success",
         details={"role": user.role.value},
@@ -773,12 +779,12 @@ async def rollback_version(
         success = system.rollback(steps)
         return {
             "success": success,
-            "message": f"Rolled back {steps} versions"
-            if success
-            else "Rollback failed",
-            "current_version": system.instruction_manager.current_version
-            if success
-            else None,
+            "message": (
+                f"Rolled back {steps} versions" if success else "Rollback failed"
+            ),
+            "current_version": (
+                system.instruction_manager.current_version if success else None
+            ),
         }
 
     except Exception as e:

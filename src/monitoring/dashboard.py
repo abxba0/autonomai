@@ -120,19 +120,19 @@ class DashboardServer:
                     padding: 0;
                     box-sizing: border-box;
                 }
-                
+
                 body {
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     min-height: 100vh;
                     padding: 20px;
                 }
-                
+
                 .dashboard {
                     max-width: 1400px;
                     margin: 0 auto;
                 }
-                
+
                 .header {
                     background: rgba(255, 255, 255, 0.95);
                     border-radius: 15px;
@@ -140,25 +140,25 @@ class DashboardServer:
                     margin-bottom: 20px;
                     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
                 }
-                
+
                 .header h1 {
                     color: #333;
                     font-size: 2.5rem;
                     margin-bottom: 10px;
                 }
-                
+
                 .header p {
                     color: #666;
                     font-size: 1.1rem;
                 }
-                
+
                 .stats-grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
                     gap: 20px;
                     margin-bottom: 20px;
                 }
-                
+
                 .stat-card {
                     background: rgba(255, 255, 255, 0.95);
                     border-radius: 15px;
@@ -166,27 +166,27 @@ class DashboardServer:
                     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
                     transition: transform 0.3s ease;
                 }
-                
+
                 .stat-card:hover {
                     transform: translateY(-5px);
                 }
-                
+
                 .stat-card.good {
                     border-left: 5px solid #4CAF50;
                 }
-                
+
                 .stat-card.warning {
                     border-left: 5px solid #FF9800;
                 }
-                
+
                 .stat-card.critical {
                     border-left: 5px solid #F44336;
                 }
-                
+
                 .stat-card.info {
                     border-left: 5px solid #2196F3;
                 }
-                
+
                 .stat-title {
                     font-size: 0.9rem;
                     color: #666;
@@ -194,59 +194,59 @@ class DashboardServer:
                     letter-spacing: 1px;
                     margin-bottom: 10px;
                 }
-                
+
                 .stat-value {
                     font-size: 2rem;
                     font-weight: bold;
                     color: #333;
                     margin-bottom: 5px;
                 }
-                
+
                 .stat-change {
                     font-size: 0.9rem;
                     color: #666;
                 }
-                
+
                 .stat-change.positive {
                     color: #4CAF50;
                 }
-                
+
                 .stat-change.negative {
                     color: #F44336;
                 }
-                
+
                 .charts-grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
                     gap: 20px;
                     margin-bottom: 20px;
                 }
-                
+
                 .chart-container {
                     background: rgba(255, 255, 255, 0.95);
                     border-radius: 15px;
                     padding: 25px;
                     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
                 }
-                
+
                 .chart-title {
                     font-size: 1.2rem;
                     color: #333;
                     margin-bottom: 20px;
                     font-weight: 600;
                 }
-                
+
                 .chart-wrapper {
                     position: relative;
                     height: 300px;
                 }
-                
+
                 .time-selector {
                     display: flex;
                     gap: 10px;
                     margin-bottom: 20px;
                 }
-                
+
                 .time-btn {
                     padding: 8px 16px;
                     background: #fff;
@@ -256,17 +256,17 @@ class DashboardServer:
                     cursor: pointer;
                     transition: all 0.3s ease;
                 }
-                
+
                 .time-btn:hover {
                     background: #667eea;
                     color: white;
                 }
-                
+
                 .time-btn.active {
                     background: #667eea;
                     color: white;
                 }
-                
+
                 .status-indicator {
                     display: inline-block;
                     width: 10px;
@@ -274,20 +274,20 @@ class DashboardServer:
                     border-radius: 50%;
                     margin-right: 8px;
                 }
-                
+
                 .status-online {
                     background: #4CAF50;
                 }
-                
+
                 .status-offline {
                     background: #F44336;
                 }
-                
+
                 @media (max-width: 768px) {
                     .charts-grid {
                         grid-template-columns: 1fr;
                     }
-                    
+
                     .stat-card, .chart-container {
                         padding: 15px;
                     }
@@ -306,11 +306,11 @@ class DashboardServer:
                         <button class="time-btn" data-hours="168">7 Days</button>
                     </div>
                 </div>
-                
+
                 <div class="stats-grid" id="statsGrid">
                     <!-- Stats will be populated by JavaScript -->
                 </div>
-                
+
                 <div class="charts-grid">
                     <div class="chart-container">
                         <div class="chart-title">Query Performance</div>
@@ -318,21 +318,21 @@ class DashboardServer:
                             <canvas id="queryChart"></canvas>
                         </div>
                     </div>
-                    
+
                     <div class="chart-container">
                         <div class="chart-title">Optimization Success Rate</div>
                         <div class="chart-wrapper">
                             <canvas id="optimizationChart"></canvas>
                         </div>
                     </div>
-                    
+
                     <div class="chart-container">
                         <div class="chart-title">System Health</div>
                         <div class="chart-wrapper">
                             <canvas id="healthChart"></canvas>
                         </div>
                     </div>
-                    
+
                     <div class="chart-container">
                         <div class="chart-title">Cost Analysis</div>
                         <div class="chart-wrapper">
@@ -341,14 +341,14 @@ class DashboardServer:
                     </div>
                 </div>
             </div>
-            
+
             <script>
                 // Global variables
                 let currentMetrics = {};
                 let historicalMetrics = [];
                 let selectedTimeRange = 1; // hours
                 let charts = {};
-                
+
                 // Initialize dashboard
                 document.addEventListener('DOMContentLoaded', function() {
                     setupTimeSelector();
@@ -356,7 +356,7 @@ class DashboardServer:
                     setupWebSocket();
                     setInterval(loadMetrics, 30000); // Refresh every 30 seconds
                 });
-                
+
                 // Setup time range selector
                 function setupTimeSelector() {
                     const buttons = document.querySelectorAll('.time-btn');
@@ -369,7 +369,7 @@ class DashboardServer:
                         });
                     });
                 }
-                
+
                 // Load current metrics
                 async function loadMetrics() {
                     try {
@@ -380,7 +380,7 @@ class DashboardServer:
                         console.error('Error loading metrics:', error);
                     }
                 }
-                
+
                 // Load historical metrics
                 async function loadHistoricalMetrics() {
                     try {
@@ -391,28 +391,28 @@ class DashboardServer:
                         console.error('Error loading historical metrics:', error);
                     }
                 }
-                
+
                 // Setup WebSocket for real-time updates
                 function setupWebSocket() {
                     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
                     const wsUrl = `${protocol}//${window.location.host}/ws/metrics`;
                     const ws = new WebSocket(wsUrl);
-                    
+
                     ws.onmessage = function(event) {
                         currentMetrics = JSON.parse(event.data);
                         updateStatsGrid();
                     };
-                    
+
                     ws.onerror = function(error) {
                         console.error('WebSocket error:', error);
                     };
                 }
-                
+
                 // Update stats grid with current metrics
                 function updateStatsGrid() {
                     const statsGrid = document.getElementById('statsGrid');
                     if (!statsGrid || !currentMetrics.execution) return;
-                    
+
                     const stats = [
                         {
                             title: 'Total Queries',
@@ -499,7 +499,7 @@ class DashboardServer:
                             icon: '🔍'
                         }
                     ];
-                    
+
                     statsGrid.innerHTML = stats.map(stat => `
                         <div class="stat-card ${stat.type}">
                             <div class="stat-title">${stat.icon} ${stat.title}</div>
@@ -510,50 +510,50 @@ class DashboardServer:
                         </div>
                     `).join('');
                 }
-                
+
                 // Format uptime
                 function formatUptime(seconds) {
                     const days = Math.floor(seconds / 86400);
                     const hours = Math.floor((seconds % 86400) / 3600);
                     const minutes = Math.floor((seconds % 3600) / 60);
-                    
+
                     if (days > 0) return `${days}d ${hours}h`;
                     if (hours > 0) return `${hours}h ${minutes}m`;
                     return `${minutes}m`;
                 }
-                
+
                 // Update charts with historical data
                 function updateCharts() {
                     if (historicalMetrics.length === 0) return;
-                    
+
                     // Query Performance Chart
                     updateQueryChart();
-                    
+
                     // Optimization Chart
                     updateOptimizationChart();
-                    
+
                     // Health Chart
                     updateHealthChart();
-                    
+
                     // Cost Chart
                     updateCostChart();
                 }
-                
+
                 function updateQueryChart() {
                     const ctx = document.getElementById('queryChart').getContext('2d');
-                    
-                    const labels = historicalMetrics.map(m => 
+
+                    const labels = historicalMetrics.map(m =>
                         new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
                     );
-                    
+
                     const successData = historicalMetrics.map(m => m.execution.successful_queries);
                     const failedData = historicalMetrics.map(m => m.execution.failed_queries);
                     const responseTimeData = historicalMetrics.map(m => m.execution.avg_response_time);
-                    
+
                     if (charts.queryChart) {
                         charts.queryChart.destroy();
                     }
-                    
+
                     charts.queryChart = new Chart(ctx, {
                         type: 'line',
                         data: {
@@ -615,21 +615,21 @@ class DashboardServer:
                         }
                     });
                 }
-                
+
                 function updateOptimizationChart() {
                     const ctx = document.getElementById('optimizationChart').getContext('2d');
-                    
-                    const labels = historicalMetrics.map(m => 
+
+                    const labels = historicalMetrics.map(m =>
                         new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
                     );
-                    
+
                     const successRateData = historicalMetrics.map(m => m.optimization.success_rate * 100);
                     const optimizationTimeData = historicalMetrics.map(m => m.optimization.avg_optimization_time);
-                    
+
                     if (charts.optimizationChart) {
                         charts.optimizationChart.destroy();
                     }
-                    
+
                     charts.optimizationChart = new Chart(ctx, {
                         type: 'bar',
                         data: {
@@ -682,21 +682,21 @@ class DashboardServer:
                         }
                     });
                 }
-                
+
                 function updateHealthChart() {
                     const ctx = document.getElementById('healthChart').getContext('2d');
-                    
-                    const labels = historicalMetrics.map(m => 
+
+                    const labels = historicalMetrics.map(m =>
                         new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
                     );
-                    
+
                     const memoryData = historicalMetrics.map(m => m.system_health.memory_usage_mb);
                     const cpuData = historicalMetrics.map(m => m.system_health.cpu_percent);
-                    
+
                     if (charts.healthChart) {
                         charts.healthChart.destroy();
                     }
-                    
+
                     charts.healthChart = new Chart(ctx, {
                         type: 'line',
                         data: {
@@ -748,20 +748,20 @@ class DashboardServer:
                         }
                     });
                 }
-                
+
                 function updateCostChart() {
                     const ctx = document.getElementById('costChart').getContext('2d');
-                    
+
                     // Get unique models from cost data
                     const models = new Set();
                     historicalMetrics.forEach(m => {
                         Object.keys(m.cost.cost_by_model).forEach(model => models.add(model));
                     });
-                    
-                    const labels = historicalMetrics.map(m => 
+
+                    const labels = historicalMetrics.map(m =>
                         new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
                     );
-                    
+
                     const datasets = Array.from(models).map((model, index) => {
                         const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
                         return {
@@ -773,11 +773,11 @@ class DashboardServer:
                             tension: 0.4
                         };
                     });
-                    
+
                     if (charts.costChart) {
                         charts.costChart.destroy();
                     }
-                    
+
                     charts.costChart = new Chart(ctx, {
                         type: 'line',
                         data: {
@@ -799,7 +799,7 @@ class DashboardServer:
                         }
                     });
                 }
-                
+
                 // Initial load
                 loadHistoricalMetrics();
             </script>

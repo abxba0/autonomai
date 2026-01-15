@@ -112,9 +112,9 @@ class Alert:
             "timestamp": self.timestamp.isoformat(),
             "acknowledged": self.acknowledged,
             "acknowledged_by": self.acknowledged_by,
-            "acknowledged_at": self.acknowledged_at.isoformat()
-            if self.acknowledged_at
-            else None,
+            "acknowledged_at": (
+                self.acknowledged_at.isoformat() if self.acknowledged_at else None
+            ),
             "metrics": self.metrics,
         }
 
@@ -323,8 +323,10 @@ class AlertManager:
                 timestamp=datetime.fromisoformat(alert_data["timestamp"]),
                 acknowledged=alert_data["acknowledged"],
                 acknowledged_by=alert_data["acknowledged_by"],
-                acknowledged_at=datetime.fromisoformat(alert_data["acknowledged_at"])
-                if alert_data["acknowledged_at"]
-                else None,
+                acknowledged_at=(
+                    datetime.fromisoformat(alert_data["acknowledged_at"])
+                    if alert_data["acknowledged_at"]
+                    else None
+                ),
             )
             self.alerts.append(alert)

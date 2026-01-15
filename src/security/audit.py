@@ -122,7 +122,8 @@ class AuditLogger:
         conn = sqlite3.connect(self.database_file)
         cursor = conn.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS audit_events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 event_id TEXT NOT NULL,
@@ -140,7 +141,8 @@ class AuditLogger:
                 error_message TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
-        """)
+        """
+        )
 
         # Create indexes for common queries
         cursor.execute(

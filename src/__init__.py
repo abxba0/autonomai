@@ -34,11 +34,11 @@ class SelfOptimizingSystem:
             self.config, self.instruction_manager, self.validation_pipeline
         )
         self.critic_model = CriticModel(self.config, self.instruction_manager)
-        
+
         # Initialize context analyzer with optional LLM support
         self.context_analyzer = ContextAnalyzer(
             use_llm=True,
-            llm_model=self.critic_model.model  # Use critic model for analysis
+            llm_model=self.critic_model.model,  # Use critic model for analysis
         )
 
         # Track pending optimizations
@@ -64,11 +64,14 @@ class SelfOptimizingSystem:
 
         # If validation failed OR correction detected, and auto-optimization is enabled, try to optimize
         should_optimize = (
-            (not result["validation_passed"] or result.get("correction_detected", False))
+            (
+                not result["validation_passed"]
+                or result.get("correction_detected", False)
+            )
             and self.config.enable_auto_optimization
             and result["failure_entry"]
         )
-        
+
         if should_optimize:
             optimization_result = self.critic_model.optimize(result["failure_entry"])
             result["optimization_attempted"] = True
@@ -198,25 +201,25 @@ class SelfOptimizingSystem:
                 "validators_count": len(self.validation_pipeline.validators),
             },
         }
-    
+
     def analyze_feedback_context(
         self,
         conversation_history: List[Dict[str, str]],
         focus_recent: int = 10,
         min_confidence: float = 0.6,
-        auto_apply: bool = False
+        auto_apply: bool = False,
     ) -> Dict[str, Any]:
         """
         Analyze conversation context to extract rules and patterns
-        
+
         This implements the /feedback-context command functionality.
-        
+
         Args:
             conversation_history: List of conversation messages
             focus_recent: Number of recent messages to focus on
             min_confidence: Minimum confidence for rule extraction
             auto_apply: Whether to automatically apply extracted rules
-            
+
         Returns:
             Dict containing analysis results and extracted rules
         """
@@ -224,21 +227,22 @@ class SelfOptimizingSystem:
         analysis_result = self.context_analyzer.analyze_conversation(
             conversation_history,
             focus_recent=focus_recent,
-            min_confidence=min_confidence
+            min_confidence=min_confidence,
         )
-        
+
         if not analysis_result.get("success"):
             return analysis_result
-        
+
         # Format rules for display
-        formatted_display = self.context_analyzer.format_rules_for_display(analysis_result)
-        
+        formatted_display = self.context_analyzer.format_rules_for_display(
+            analysis_result
+        )
+
         # Create instruction updates
         instruction_updates = self.context_analyzer.create_instruction_updates(
-            analysis_result,
-            format="markdown"
+            analysis_result, format="markdown"
         )
-        
+
         result = {
             "success": True,
             "analysis": analysis_result,
@@ -246,63 +250,63 @@ class SelfOptimizingSystem:
             "instruction_updates": instruction_updates,
             "rules_count": len(analysis_result.get("rules", [])),
             "dont_rules_count": len(analysis_result.get("dont_rules", [])),
-            "patterns_count": len(analysis_result.get("patterns", []))
+            "patterns_count": len(analysis_result.get("patterns", [])),
         }
-        
+
         # Optionally auto-apply the rules
         if auto_apply and instruction_updates:
-            apply_result = self._apply_context_rules(instruction_updates, analysis_result)
+            apply_result = self._apply_context_rules(
+                instruction_updates, analysis_result
+            )
             result["auto_apply_result"] = apply_result
-        
+
         return result
-    
+
     def _apply_context_rules(
-        self,
-        instruction_updates: str,
-        analysis_result: Dict[str, Any]
+        self, instruction_updates: str, analysis_result: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Apply extracted rules from context analysis to system instructions
-        
+
         Args:
             instruction_updates: Formatted instruction updates
             analysis_result: Analysis result from context analyzer
-            
+
         Returns:
             Dict with application status
         """
         try:
             # Create a feedback entry for this context-based update
             feedback_description = f"Context analysis extracted {analysis_result.get('rules_count', 0)} positive rules and {analysis_result.get('dont_rules_count', 0)} negative rules"
-            
+
             failure = FailureEntry(
                 trigger_type="human_feedback",
                 failure_description=feedback_description,
                 severity="moderate",
-                user_feedback=instruction_updates
+                user_feedback=instruction_updates,
             )
-            
+
             self.instruction_manager.add_failure(failure)
-            
+
             # Try to optimize with the extracted rules
             if self.config.enable_auto_optimization:
                 optimization_result = self.critic_model.optimize(failure)
                 return {
                     "success": True,
                     "optimization_attempted": True,
-                    "optimization_result": optimization_result
+                    "optimization_result": optimization_result,
                 }
             else:
                 return {
                     "success": True,
                     "optimization_attempted": False,
-                    "message": "Auto-optimization is disabled. Rules logged for manual review."
+                    "message": "Auto-optimization is disabled. Rules logged for manual review.",
                 }
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": "Failed to apply context rules"
+                "message": "Failed to apply context rules",
             }
 
 
