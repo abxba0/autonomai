@@ -239,16 +239,23 @@ class RuleGraph:
         if not old_node:
             raise ValueError(f"Rule {old_rule_id} not found")
         
-        # Create new rule with same category and parent
+        # Prepare defaults from old node, but allow overrides from kwargs
+        defaults = {
+            'category': old_node.category,
+            'parent_id': old_node.parent_id,
+            'tags': old_node.tags,
+            'priority': old_node.priority,
+            'tenant_id': old_node.tenant_id,
+        }
+        
+        # Override with any provided kwargs
+        defaults.update(kwargs)
+        
+        # Create new rule with supersession
         new_node = self.add_rule(
             rule_text=new_rule_text,
-            category=old_node.category,
-            parent_id=old_node.parent_id,
             supersedes_ids=[old_rule_id],
-            tags=old_node.tags,
-            priority=old_node.priority,
-            tenant_id=old_node.tenant_id,
-            **kwargs
+            **defaults
         )
         
         return new_node
