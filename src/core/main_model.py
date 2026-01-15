@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from ..models.config import SystemConfig, FailureEntry
 from .instruction_manager import InstructionManager
 from .validator import ValidationPipeline
+from .correction_detector import CorrectionDetector
 
 
 class MainModel:
@@ -24,6 +25,16 @@ class MainModel:
         self.config = config
         self.instruction_manager = instruction_manager
         self.validation_pipeline = validation_pipeline or ValidationPipeline()
+        
+        # Initialize correction detector if enabled
+        self.correction_detector = None
+        if config.enable_correction_detection:
+            self.correction_detector = CorrectionDetector(
+                confidence_threshold=config.correction_detection_confidence_threshold
+            )
+        
+        # Track last response for correction detection
+        self.last_response = None
 
         # Load environment variables
         load_dotenv()
@@ -252,24 +263,60 @@ class MainModel:
         validation_passed = True
         validation_results = []
         failure_entry = None
+        correction_detected = False
+        correction_confidence = 0.0
+
+        # Check for implicit corrections if enabled
+        if self.correction_detector and self.last_response:
+            is_correction, confidence, correction_type = self.correction_detector.detect_correction(
+                user_query,
+                previous_response=self.last_response,
+                conversation_history=conversation_context
+            )
+            
+            if is_correction:
+                correction_detected = True
+                correction_confidence = confidence
+                
+                # Create failure entry for implicit feedback
+                correction_description = self.correction_detector.create_correction_description(
+                    user_query,
+                    correction_type,
+                    confidence,
+                    self.last_response
+                )
+                
+                failure_entry = FailureEntry(
+                    trigger_type="implicit_feedback",
+                    failure_description=correction_description,
+                    user_query=user_query,
+                    last_model_output=self.last_response,
+                    severity="moderate"
+                )
+                self.instruction_manager.add_failure(failure_entry)
 
         if self.config.enable_auto_validation:
             validation_passed, validation_results = self.validation_pipeline.validate(
                 output, context={"query": user_query}
             )
 
-            # Create failure entry if validation failed
-            if not validation_passed:
+            # Create failure entry if validation failed (only if not already created by correction detector)
+            if not validation_passed and not correction_detected:
                 failure_entry = self._create_validation_failure(
                     user_query, output, validation_results
                 )
                 self.instruction_manager.add_failure(failure_entry)
+        
+        # Store current response for next correction detection
+        self.last_response = output
 
         return {
             "output": output,
             "validation_passed": validation_passed,
             "validation_results": validation_results,
             "failure_entry": failure_entry,
+            "correction_detected": correction_detected,
+            "correction_confidence": correction_confidence,
         }
 
     def _create_validation_failure(
