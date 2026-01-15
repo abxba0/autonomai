@@ -317,6 +317,9 @@ Return ONLY the JSON workflow plan, no additional text.
             workflow_plan.planner_version = (
                 self.workflow_instruction_manager.current_planner_version
             )
+            workflow_plan.actor_version = (
+                self.workflow_instruction_manager.current_actor_version
+            )
 
             # Store in active workflows
             self.active_workflows[workflow_plan.id] = workflow_plan
@@ -393,6 +396,10 @@ Return ONLY the JSON workflow plan, no additional text.
             goal=goal,
             steps=[step],
         )
+        
+        # Set version tracking
+        plan.planner_version = self.workflow_instruction_manager.current_planner_version
+        plan.actor_version = self.workflow_instruction_manager.current_actor_version
 
         self.active_workflows[plan.id] = plan
         return plan
