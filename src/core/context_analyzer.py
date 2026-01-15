@@ -13,6 +13,9 @@ from datetime import datetime
 class ContextAnalyzer:
     """Analyzes conversation context to extract rules and patterns"""
     
+    # Configuration constants
+    MIN_RULE_TEXT_LENGTH = 5  # Minimum length for extracted rule text
+    
     def __init__(self, use_llm: bool = False, llm_model=None):
         """
         Initialize the context analyzer
@@ -96,7 +99,7 @@ class ContextAnalyzer:
                 matches = re.findall(pattern, content, re.IGNORECASE)
                 for match in matches:
                     rule_text = match.strip()
-                    if len(rule_text) > 5:  # Filter out too short matches
+                    if len(rule_text) > self.MIN_RULE_TEXT_LENGTH:  # Filter out too short matches
                         rule = {
                             "text": rule_text,
                             "type": rule_type,

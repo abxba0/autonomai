@@ -120,6 +120,7 @@ async def root():
         "endpoints": [
             "/execute - Execute query",
             "/feedback - Provide feedback",
+            "/feedback-context - Analyze conversation and extract rules",
             "/status - System status",
             "/versions - Version history",
             "/instructions - Current instructions",

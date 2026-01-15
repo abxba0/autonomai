@@ -12,6 +12,9 @@ import re
 class CorrectionDetector:
     """Detects implicit corrections and negative feedback in user messages"""
     
+    # Configuration constants
+    MAX_DESCRIPTION_LENGTH = 200  # Maximum length for description truncation
+    
     def __init__(self, confidence_threshold: float = 0.7):
         """
         Initialize the correction detector
@@ -190,9 +193,9 @@ class CorrectionDetector:
             Formatted description for the failure log
         """
         description = f"Implicit correction detected (type: {correction_type}, confidence: {confidence:.2f})\n"
-        description += f"User indicated dissatisfaction or correction: {user_message[:200]}"
+        description += f"User indicated dissatisfaction or correction: {user_message[:self.MAX_DESCRIPTION_LENGTH]}"
         
         if previous_response:
-            description += f"\nPrevious response: {previous_response[:200]}"
+            description += f"\nPrevious response: {previous_response[:self.MAX_DESCRIPTION_LENGTH]}"
         
         return description
