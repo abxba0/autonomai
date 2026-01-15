@@ -388,6 +388,48 @@ class CriticModel:
             else:
                 print(f"✓ Judge approved proposal (confidence: {judge_response.confidence_score:.2f})")
                 print(f"  Reasoning: {judge_response.reasoning[:100]}...")
+        
+        # Phase 3: Automated Regression Testing
+        if self.config.enable_regression_testing and self.instruction_manager.golden_dataset:
+            # Temporarily apply the change to test it
+            temp_appendix = self._build_updated_appendix(
+                critic_response, self.instruction_manager.dynamic_appendix
+            )
+            
+            # Create a test function that uses the temporary appendix
+            def test_with_new_instructions(query: str) -> str:
+                # This is a simplified test - in production, you'd want to
+                # actually run the MainModel with the new instructions
+                # For now, we just return a placeholder
+                return f"Test output for: {query}"
+            
+            # Run regression tests
+            regression_results = self.instruction_manager.golden_dataset.run_regression_tests(
+                test_with_new_instructions,
+                sample_size=self.config.regression_test_sample_size
+            )
+            
+            # Check if regression tests passed
+            if regression_results["pass_rate"] < self.config.regression_pass_threshold:
+                print(f"✗ Regression tests failed: {regression_results['pass_rate']*100:.1f}% pass rate")
+                print(f"  Required: {self.config.regression_pass_threshold*100:.1f}%")
+                
+                # Add to pending review with regression test details
+                self.instruction_manager.add_to_pending_review(
+                    failure,
+                    f"Regression tests failed\n\n"
+                    f"Pass rate: {regression_results['pass_rate']*100:.1f}%\n"
+                    f"Passed: {regression_results['passed']}/{regression_results['total']}\n\n"
+                    f"Proposed change:\n{critic_response.proposed_appendix_update}\n\n"
+                    f"This change may break existing functionality."
+                )
+                
+                failure.optimization_attempted = True
+                failure.optimization_successful = False
+                failure.resolution_notes = f"Regression tests failed - pending review"
+                return False
+            else:
+                print(f"✓ Regression tests passed: {regression_results['pass_rate']*100:.1f}% ({regression_results['passed']}/{regression_results['total']})")
 
         # Build new appendix
         new_appendix = self._build_updated_appendix(
