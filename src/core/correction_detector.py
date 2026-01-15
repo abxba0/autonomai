@@ -48,7 +48,9 @@ class CorrectionDetector:
             # Dissatisfaction expressions
             (r'\b(?:that doesn\'?t\s*(?:make sense|work|help|answer))',
              0.75, "dissatisfaction"),
-            (r'\b(?:that\'?s?\s*)?(?:not what|nothing like)\s+(?:I|we)\s+(?:asked|wanted|needed)',
+            (r'(?:not what|nothing like)\s+(?:i|we)\s+(?:asked|wanted|needed)',
+             0.8, "dissatisfaction"),
+            (r'\b(?:this|that)\s+(?:is|was)\s+not what\s+(?:i|we)\s+(?:asked|wanted|needed)',
              0.8, "dissatisfaction"),
             (r'\b(?:you|this)\s+(?:didn\'?t|haven\'?t)\s+(?:answer|address|help)',
              0.8, "dissatisfaction"),
