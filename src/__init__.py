@@ -17,8 +17,16 @@ from .core.validator import (
     RegexValidator,
     CustomValidator,
 )
+from .core.workflow_orchestrator import WorkflowOrchestrator
 from .models.config import SystemConfig, FailureEntry
 from .models.critic_response import CriticResponse
+from .models.workflow import (
+    WorkflowPlan,
+    WorkflowStep,
+    WorkflowFailure,
+    StepStatus,
+    FailureSource,
+)
 
 
 class SelfOptimizingSystem:
@@ -262,6 +270,39 @@ class SelfOptimizingSystem:
 
         return result
 
+    def execute_workflow(
+        self,
+        goal: str,
+        context: Optional[Dict[str, Any]] = None,
+        max_retries: int = 3,
+    ) -> Dict[str, Any]:
+        """
+        Execute a multi-step workflow from a high-level goal
+        
+        This creates a workflow plan using the Planner, executes steps with the Executor,
+        and automatically optimizes based on failures using the Critic.
+        
+        Args:
+            goal: The high-level objective to achieve
+            context: Optional context information for planning
+            max_retries: Maximum retries for failed steps
+            
+        Returns:
+            Dict with workflow execution results including:
+            - workflow_id: Unique workflow identifier
+            - status: completed or failed
+            - steps_completed: Number of successful steps
+            - results: Detailed results for each step
+        """
+        if not hasattr(self, 'workflow_orchestrator'):
+            from .core.workflow_orchestrator import WorkflowOrchestrator
+            self.workflow_orchestrator = WorkflowOrchestrator(
+                self.config,
+                self.instruction_manager
+            )
+        
+        return self.workflow_orchestrator.execute_workflow(goal, context, max_retries)
+
     def _apply_context_rules(
         self, instruction_updates: str, analysis_result: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -323,4 +364,10 @@ __all__ = [
     "CustomValidator",
     "FailureEntry",
     "CriticResponse",
+    "WorkflowOrchestrator",
+    "WorkflowPlan",
+    "WorkflowStep",
+    "WorkflowFailure",
+    "StepStatus",
+    "FailureSource",
 ]
