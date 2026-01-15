@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import json
 import time
 import os
@@ -13,6 +13,8 @@ from ..models.config import SystemConfig, OptimizationAttempt, FailureEntry
 from ..models.critic_response import CriticResponse
 from ..models.version import VersionMetadata
 from .instruction_manager import InstructionManager
+from .judge_model import JudgeModel
+from ..utils.embeddings import EmbeddingsManager
 
 
 class CriticModel:
@@ -30,6 +32,28 @@ class CriticModel:
 
         # System prompt for Critic
         self.system_prompt = self._build_system_prompt()
+        
+        # Initialize embeddings manager for semantic de-duplication
+        self.embeddings_manager = None
+        if self.config.enable_semantic_deduplication:
+            try:
+                self.embeddings_manager = EmbeddingsManager(self.config)
+            except Exception as e:
+                print(f"Warning: Could not initialize embeddings for de-duplication: {e}")
+                self.embeddings_manager = None
+        
+        # Initialize Judge model for consensus validation (Phase 2)
+        self.judge_model = None
+        if self.config.enable_judge_model:
+            try:
+                self.judge_model = JudgeModel(
+                    self.config,
+                    self.instruction_manager.base_instructions
+                )
+                print("✓ Judge model initialized for consensus validation")
+            except Exception as e:
+                print(f"Warning: Could not initialize Judge model: {e}")
+                self.judge_model = None
 
     def _initialize_model(self):
         """Initialize the critic model with LangChain"""
@@ -304,6 +328,66 @@ class CriticModel:
         self, critic_response: CriticResponse, failure: FailureEntry
     ) -> bool:
         """Apply the critic's proposed changes"""
+        
+        # Phase 4: Confidence-Based Throttling
+        if self.config.enable_confidence_throttling:
+            if critic_response.confidence_score < self.config.confidence_threshold:
+                print(f"⚠ Confidence too low ({critic_response.confidence_score:.2f} < {self.config.confidence_threshold})")
+                print(f"  Moving to pending review for human evaluation")
+                
+                # Add to pending review with confidence info
+                self.instruction_manager.add_to_pending_review(
+                    failure,
+                    f"Low confidence score ({critic_response.confidence_score:.2f})\n\n"
+                    f"Proposed change:\n{critic_response.proposed_appendix_update}\n\n"
+                    f"Reasoning: {critic_response.impact_analysis}"
+                )
+                
+                failure.optimization_attempted = True
+                failure.optimization_successful = False
+                failure.resolution_notes = f"Low confidence - pending human review"
+                return False
+        
+        # Phase 1: Semantic De-duplication Check
+        if self.config.enable_semantic_deduplication and self.embeddings_manager:
+            is_duplicate, similar_rule = self._check_semantic_duplicate(
+                critic_response.proposed_appendix_update
+            )
+            if is_duplicate:
+                print(f"✓ Semantic de-duplication: Skipping duplicate rule (similarity to existing rule)")
+                print(f"  Existing rule: {similar_rule[:100]}...")
+                # Still mark as successful optimization but don't add duplicate
+                failure.optimization_attempted = True
+                failure.optimization_successful = True
+                failure.resolution_notes = f"Rule already exists (semantic similarity detected)"
+                return True
+        
+        # Phase 2: Judge Model Consensus Validation
+        if self.config.enable_judge_model and self.judge_model and self.config.judge_approval_required:
+            judge_response = self.judge_model.review_proposal(
+                critic_response,
+                self.instruction_manager.dynamic_appendix,
+                failure.to_markdown(detail_level="full")
+            )
+            
+            if not judge_response.approved:
+                print(f"✗ Judge rejected proposal: {judge_response.reasoning}")
+                if judge_response.suggestions:
+                    print(f"  Suggestions: {judge_response.suggestions}")
+                
+                # Add to pending review with Judge's feedback
+                self.instruction_manager.add_to_pending_review(
+                    failure,
+                    f"Judge rejected: {judge_response.reasoning}\n\nSuggestions: {judge_response.suggestions or 'None'}"
+                )
+                
+                failure.optimization_attempted = True
+                failure.optimization_successful = False
+                failure.resolution_notes = f"Judge rejected: {judge_response.reasoning}"
+                return False
+            else:
+                print(f"✓ Judge approved proposal (confidence: {judge_response.confidence_score:.2f})")
+                print(f"  Reasoning: {judge_response.reasoning[:100]}...")
 
         # Build new appendix
         new_appendix = self._build_updated_appendix(
@@ -327,6 +411,84 @@ class CriticModel:
         )
 
         return success
+    
+    def _check_semantic_duplicate(self, proposed_rule: str) -> tuple[bool, Optional[str]]:
+        """
+        Check if proposed rule is semantically similar to existing rules
+        
+        Returns:
+            Tuple of (is_duplicate, similar_rule_text)
+        """
+        if not self.embeddings_manager or not self.embeddings_manager.embeddings_model:
+            return False, None
+        
+        try:
+            # Get embedding for proposed rule
+            proposed_embedding = self.embeddings_manager.get_embedding(proposed_rule)
+            if not proposed_embedding:
+                return False, None
+            
+            # Extract existing rules from dynamic appendix
+            existing_rules = self._extract_rules_from_appendix(
+                self.instruction_manager.dynamic_appendix
+            )
+            
+            # Check similarity against each existing rule
+            for rule_text in existing_rules:
+                rule_embedding = self.embeddings_manager.get_embedding(rule_text)
+                if not rule_embedding:
+                    continue
+                
+                # Calculate cosine similarity
+                similarity = self._cosine_similarity(proposed_embedding, rule_embedding)
+                
+                if similarity >= self.config.rule_similarity_threshold:
+                    return True, rule_text
+            
+            return False, None
+            
+        except Exception as e:
+            print(f"Warning: Error checking semantic duplicate: {e}")
+            return False, None
+    
+    def _extract_rules_from_appendix(self, appendix: str) -> List[str]:
+        """
+        Extract individual rules from the dynamic appendix
+        
+        Returns list of rule texts
+        """
+        rules = []
+        
+        # Split by common delimiters (---, ###, **)
+        sections = appendix.split("---")
+        
+        for section in sections:
+            section = section.strip()
+            if section and len(section) > 20:  # Ignore very short sections
+                # Further split by headers if needed
+                if "###" in section or "**" in section:
+                    # This is a structured rule
+                    rules.append(section)
+                elif section.startswith("*No custom rules yet"):
+                    # Skip placeholder text
+                    continue
+                else:
+                    rules.append(section)
+        
+        return rules
+    
+    def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
+        """Calculate cosine similarity between two vectors"""
+        import math
+        
+        dot_product = sum(a * b for a, b in zip(vec1, vec2))
+        magnitude1 = math.sqrt(sum(a * a for a in vec1))
+        magnitude2 = math.sqrt(sum(b * b for b in vec2))
+        
+        if magnitude1 == 0 or magnitude2 == 0:
+            return 0.0
+        
+        return dot_product / (magnitude1 * magnitude2)
 
     def _build_updated_appendix(
         self, critic_response: CriticResponse, current_appendix: str
