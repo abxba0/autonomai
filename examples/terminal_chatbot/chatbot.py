@@ -63,18 +63,21 @@ class TerminalChatbot:
         """Display help information"""
         help_text = """
 📚 Available Commands:
-  /help       - Show this help message
-  /status     - Show system status and configuration
-  /history    - Show conversation history
-  /versions   - Show instruction version history
-  /feedback   - Submit feedback for instruction optimization
-  /clear      - Clear conversation history
-  /quit       - Exit the chatbot
+  /help             - Show this help message
+  /status           - Show system status and configuration
+  /history          - Show conversation history
+  /versions         - Show instruction version history
+  /feedback         - Submit feedback for instruction optimization
+  /feedback-context - Analyze conversation and extract rules automatically
+  /clear            - Clear conversation history
+  /quit             - Exit the chatbot
 
 ✨ Features Demonstrated:
   • Interactive conversation with DeepSeek API
   • Automatic output validation
   • Self-optimizing instructions based on failures
+  • Implicit correction detection
+  • Context-based rule extraction
   • Version control for instruction changes
   • Manual feedback processing
   • Conversation context management
@@ -82,6 +85,7 @@ class TerminalChatbot:
 💡 Tips:
   • Just type your question and press Enter
   • Use /feedback to help the system learn from your input
+  • Use /feedback-context to analyze conversation patterns
   • Check /status to see the current system configuration
   • View /versions to track instruction improvements
 """
@@ -162,6 +166,57 @@ class TerminalChatbot:
         """Clear conversation history"""
         self.conversation_history = []
         print("\n🗑️  Conversation history cleared.\n")
+    
+    def analyze_feedback_context(self):
+        """Analyze conversation context and extract rules"""
+        if not self.conversation_history:
+            print("\n❌ No conversation history available for analysis.\n")
+            return
+        
+        print("\n🔍 Analyzing conversation context...")
+        print("This may take a moment...\n")
+        
+        # Perform context analysis
+        result = self.system.analyze_feedback_context(
+            self.conversation_history,
+            focus_recent=10,
+            min_confidence=0.6,
+            auto_apply=False  # Don't auto-apply, let user review first
+        )
+        
+        if not result.get("success"):
+            print(f"❌ Analysis failed: {result.get('message', 'Unknown error')}\n")
+            return
+        
+        # Display the formatted analysis
+        print(result["formatted_display"])
+        print()
+        
+        # Ask if user wants to apply these rules
+        if result.get("rules_count", 0) > 0 or result.get("dont_rules_count", 0) > 0:
+            apply = input("\n💡 Apply these rules to system instructions? (y/n): ").lower().strip()
+            
+            if apply == 'y':
+                print("\n📝 Applying rules...")
+                apply_result = self.system._apply_context_rules(
+                    result["instruction_updates"],
+                    result["analysis"]
+                )
+                
+                if apply_result.get("success"):
+                    print("✅ Rules applied successfully!")
+                    if apply_result.get("optimization_result", {}).get("success"):
+                        print("✨ System instructions updated!")
+                    else:
+                        print("⚠️  Rules logged for review.")
+                else:
+                    print(f"❌ Failed to apply rules: {apply_result.get('message', 'Unknown error')}")
+            else:
+                print("\n📋 Rules not applied. You can review them above.")
+        else:
+            print("\n💭 No significant rules extracted from conversation.")
+        
+        print()
 
     def process_command(self, command: str) -> bool:
         """Process special commands. Returns True if should continue, False if should quit"""
@@ -179,6 +234,8 @@ class TerminalChatbot:
             self.show_versions()
         elif command == "/feedback":
             self.submit_feedback()
+        elif command == "/feedback-context":
+            self.analyze_feedback_context()
         elif command == "/clear":
             self.clear_history()
         else:
@@ -211,6 +268,17 @@ class TerminalChatbot:
             "role": "assistant",
             "content": output
         })
+        
+        # Show correction detection info if relevant
+        if result.get("correction_detected"):
+            confidence = result.get("correction_confidence", 0)
+            print(f"🔍 Note: Implicit correction detected (confidence: {confidence:.2f})")
+            print("    The system is learning from your feedback!")
+            if result.get("optimization_attempted"):
+                opt_result = result.get("optimization_result", {})
+                if opt_result.get("success"):
+                    print("    ✨ Instructions updated based on your correction!")
+            print()
         
         # Show validation and optimization info if relevant
         if not result["validation_passed"]:

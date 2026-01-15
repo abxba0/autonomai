@@ -57,6 +57,24 @@ class FeedbackRequest(BaseModel):
     attach_last_output: bool = True
 
 
+class FeedbackContextRequest(BaseModel):
+    conversation_history: List[Dict[str, str]]
+    focus_recent: int = 10
+    min_confidence: float = 0.6
+    auto_apply: bool = False
+
+
+class FeedbackContextResponse(BaseModel):
+    success: bool
+    message: Optional[str] = None
+    rules_count: int = 0
+    dont_rules_count: int = 0
+    patterns_count: int = 0
+    formatted_display: Optional[str] = None
+    instruction_updates: Optional[str] = None
+    auto_apply_result: Optional[Dict[str, Any]] = None
+
+
 class VersionInfo(BaseModel):
     version_id: str
     timestamp: str
@@ -159,6 +177,51 @@ async def provide_feedback(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Feedback error: {str(e)}")
+
+
+@app.post("/feedback-context", response_model=FeedbackContextResponse)
+async def analyze_feedback_context(
+    request: FeedbackContextRequest, system: SelfOptimizingSystem = Depends(get_system)
+):
+    """
+    Analyze conversation context to extract rules and patterns
+    
+    This endpoint processes the conversation history to automatically detect
+    user preferences, desired behaviors, and patterns, then proposes new
+    rules (both positive "DO" rules and negative "DON'T" rules).
+    """
+    try:
+        result = system.analyze_feedback_context(
+            conversation_history=request.conversation_history,
+            focus_recent=request.focus_recent,
+            min_confidence=request.min_confidence,
+            auto_apply=request.auto_apply
+        )
+        
+        if not result.get("success"):
+            raise HTTPException(
+                status_code=400,
+                detail=result.get("message", "Context analysis failed")
+            )
+        
+        return FeedbackContextResponse(
+            success=result["success"],
+            message=result.get("analysis", {}).get("message"),
+            rules_count=result.get("rules_count", 0),
+            dont_rules_count=result.get("dont_rules_count", 0),
+            patterns_count=result.get("patterns_count", 0),
+            formatted_display=result.get("formatted_display"),
+            instruction_updates=result.get("instruction_updates"),
+            auto_apply_result=result.get("auto_apply_result")
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Context analysis error: {str(e)}"
+        )
 
 
 @app.get("/status", response_model=SystemStatus)
