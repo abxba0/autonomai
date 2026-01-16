@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconn
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
+from contextlib import asynccontextmanager
 from strawberry.fastapi import GraphQLRouter
 import uvicorn
 import os
@@ -143,11 +144,32 @@ app_v2 = FastAPI(
     version="2.0.0",
 )
 
+
+# Lifespan event handler for startup/shutdown
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifespan events"""
+    # Startup
+    logger.info("Starting Self-Optimizing System API v2")
+    webhook_manager = get_webhook_manager_instance()
+    await webhook_manager.start_async()
+    logger.info("Webhook manager started")
+    
+    yield
+    
+    # Shutdown
+    logger.info("Shutting down Self-Optimizing System API v2")
+    webhook_manager = get_webhook_manager_instance()
+    await webhook_manager.stop()
+    logger.info("Webhook manager stopped")
+
+
 # Main app with versioning
 app = FastAPI(
     title="Self-Optimizing Instruction Library API",
     description="Production API with advanced features and versioning",
     version="2.0.0",
+    lifespan=lifespan,
 )
 
 # Add CORS middleware
@@ -548,28 +570,6 @@ async def root():
         },
         "migration_guide": "/docs/v2-migration",
     }
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize services on startup"""
-    logger.info("Starting Self-Optimizing System API v2")
-
-    # Start webhook manager
-    webhook_manager = get_webhook_manager_instance()
-    await webhook_manager.start_async()
-    logger.info("Webhook manager started")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
-    logger.info("Shutting down Self-Optimizing System API v2")
-
-    # Stop webhook manager
-    webhook_manager = get_webhook_manager_instance()
-    await webhook_manager.stop()
-    logger.info("Webhook manager stopped")
 
 
 if __name__ == "__main__":

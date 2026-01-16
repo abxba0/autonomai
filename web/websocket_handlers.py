@@ -4,6 +4,7 @@ WebSocket handlers for real-time updates
 
 import asyncio
 import json
+import time
 from typing import Set, Dict, Any, Optional
 from fastapi import WebSocket, WebSocketDisconnect
 import logging
@@ -164,7 +165,7 @@ async def notify_workflow_update(
         "status": status,
         "step": step,
         "message": message,
-        "timestamp": asyncio.get_event_loop().time(),
+        "timestamp": time.time(),
     }
     await connection_manager.broadcast_to_channel("workflows", update)
 
@@ -181,7 +182,7 @@ async def notify_job_completed(
         "job_id": job_id,
         "success": success,
         "result": result,
-        "timestamp": asyncio.get_event_loop().time(),
+        "timestamp": time.time(),
     }
     await connection_manager.broadcast_to_channel("jobs", notification)
 
@@ -196,7 +197,7 @@ async def notify_optimization_completed(
         "type": "optimization_completed",
         "version_id": version_id,
         "changes": changes,
-        "timestamp": asyncio.get_event_loop().time(),
+        "timestamp": time.time(),
     }
     await connection_manager.broadcast_to_channel("optimizations", notification)
 
@@ -215,6 +216,6 @@ async def notify_regression_detected(
         "old_value": old_value,
         "new_value": new_value,
         "severity": severity,
-        "timestamp": asyncio.get_event_loop().time(),
+        "timestamp": time.time(),
     }
     await connection_manager.broadcast_to_channel("regressions", alert)
