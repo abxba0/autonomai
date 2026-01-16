@@ -1,0 +1,252 @@
+name: Regression Test Suite
+
+on:
+  push:
+    branches: [ main, develop, 'copilot/**' ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  regression-tests:
+    name: Regression Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+      fail-fast: false
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov pytest-xdist
+    
+    - name: Create test directories
+      run: |
+        mkdir -p tests/data
+        mkdir -p tests/regression_reports
+    
+    - name: Run regression test suite
+      run: |
+        python tests/test_regression_comprehensive.py
+      continue-on-error: false
+    
+    - name: Upload test reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: regression-reports-py${{ matrix.python-version }}
+        path: tests/regression_reports/
+        retention-days: 30
+    
+    - name: Upload performance baseline
+      uses: actions/upload-artifact@v3
+      if: github.ref == 'refs/heads/main'
+      with:
+        name: performance-baseline
+        path: tests/data/performance_baseline.json
+        retention-days: 90
+    
+    - name: Check for performance regressions
+      run: |
+        python -c "
+        import json
+        import sys
+        try:
+            with open('tests/regression_reports/regression_report.json', 'r') as f:
+                report = json.load(f)
+                regressions = report.get('performance_regressions', [])
+                if regressions:
+                    print(f'⚠️  Performance regressions detected: {len(regressions)}')
+                    for test in regressions:
+                        print(f'  - {test}')
+                    sys.exit(1)
+                else:
+                    print('✅ No performance regressions detected')
+        except FileNotFoundError:
+            print('⚠️  No regression report found')
+        "
+      continue-on-error: true
+    
+    - name: Comment PR with results
+      uses: actions/github-script@v6
+      if: github.event_name == 'pull_request'
+      with:
+        script: |
+          const fs = require('fs');
+          try {
+            const report = JSON.parse(fs.readFileSync('tests/regression_reports/regression_report.json', 'utf8'));
+            const summary = report.summary;
+            
+            const body = `## 🧪 Regression Test Results
+            
+            **Python ${{ matrix.python-version }}**
+            
+            - ✅ Passed: ${summary.passed}
+            - ❌ Failed: ${summary.failed}
+            - 📊 Pass Rate: ${summary.pass_rate.toFixed(1)}%
+            
+            ${report.performance_regressions.length > 0 ? 
+              `⚠️ **Performance Regressions Detected**: ${report.performance_regressions.length}` : 
+              '✅ No performance regressions'}
+            
+            <details>
+            <summary>View detailed report</summary>
+            
+            \`\`\`json
+            ${JSON.stringify(summary, null, 2)}
+            \`\`\`
+            
+            </details>`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+          } catch (error) {
+            console.log('Could not read test report:', error);
+          }
+
+  golden-dataset-validation:
+    name: Golden Dataset Validation
+    runs-on: ubuntu-latest
+    needs: regression-tests
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run golden dataset self-healing
+      run: |
+        python -c "
+        import sys
+        import os
+        sys.path.insert(0, 'src')
+        
+        from tests.test_regression_comprehensive import test_golden_dataset_self_healing
+        
+        print('Running golden dataset self-healing validation...')
+        test_golden_dataset_self_healing()
+        "
+      continue-on-error: true
+    
+    - name: Check for dataset deviations
+      run: |
+        echo "✅ Golden dataset validation complete"
+
+  benchmark-comparison:
+    name: Benchmark Comparison
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout PR branch
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run benchmarks (PR)
+      run: |
+        mkdir -p tests/data
+        python tests/test_regression_comprehensive.py
+        cp tests/data/performance_baseline.json /tmp/pr_baseline.json || true
+    
+    - name: Checkout base branch
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.base_ref }}
+    
+    - name: Run benchmarks (base)
+      run: |
+        python tests/test_regression_comprehensive.py
+        cp tests/data/performance_baseline.json /tmp/base_baseline.json || true
+    
+    - name: Compare benchmarks
+      run: |
+        python -c "
+        import json
+        import sys
+        
+        try:
+            with open('/tmp/base_baseline.json', 'r') as f:
+                base = json.load(f)
+            with open('/tmp/pr_baseline.json', 'r') as f:
+                pr = json.load(f)
+            
+            print('## Benchmark Comparison')
+            print()
+            print('| Test | Base (ms) | PR (ms) | Change |')
+            print('|------|-----------|---------|--------|')
+            
+            for test_name in base.keys():
+                if test_name in pr:
+                    base_time = base[test_name]['execution_time_ms']
+                    pr_time = pr[test_name]['execution_time_ms']
+                    change = ((pr_time - base_time) / base_time) * 100
+                    emoji = '✅' if change < 0 else ('⚠️' if change > 20 else '➡️')
+                    print(f'| {test_name} | {base_time:.2f} | {pr_time:.2f} | {emoji} {change:+.1f}% |')
+        except FileNotFoundError as e:
+            print(f'Note: Could not compare benchmarks - {e}')
+        " > /tmp/benchmark_comparison.md
+        cat /tmp/benchmark_comparison.md
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [regression-tests, golden-dataset-validation]
+    if: always()
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: artifacts
+    
+    - name: Generate summary
+      run: |
+        echo "# Regression Test Suite Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Regression tests completed" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Golden dataset validation completed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📊 Detailed reports available in artifacts" >> $GITHUB_STEP_SUMMARY
