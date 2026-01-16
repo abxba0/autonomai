@@ -47,7 +47,7 @@ This system implements a self-optimizing AI assistant that:
 - Regex pattern matching
 - Custom validation functions
 
-### 🔀 Autonomous Workflow Orchestrator (NEW)
+### 🔀 Autonomous Workflow Orchestrator (ENHANCED)
 - **Planner-Executor-Critic Pattern**: Dynamic multi-step workflow automation
 - **Dynamic Planning**: Generates workflow plans from high-level goals using specialized Planner LLM
 - **Specialized Execution**: Executes steps with role-specific Actor instructions
@@ -56,6 +56,11 @@ This system implements a self-optimizing AI assistant that:
 - **Granular Versioning**: Separate version control for planner and actor instructions
 - **Failure Analysis**: Distinguishes between planning failures and execution failures
 - **Automatic Recovery**: Retries failed steps with optimized instructions
+- **Conditional Branching (NEW)**: if/else and switch/case logic for dynamic workflow paths
+- **Loop Constructs (NEW)**: while, for, and foreach iteration for batch processing
+- **Nested Sub-Workflows (NEW)**: Modular, reusable workflow components
+- **Dynamic Modification (NEW)**: Add, remove, or modify steps at runtime
+- **Enhanced Observability (NEW)**: Comprehensive execution tracking and logging
 
 ## Architecture
 
@@ -236,8 +241,11 @@ for step_result in result['results']:
 - **Automatic Recovery**: If a step fails, the Critic determines if it was a planning or execution issue
 - **Targeted Optimization**: Failures improve either planner.md or actor.md instructions accordingly
 - **Version Tracking**: Separate versioning for planning and execution strategies
+- **Enhanced Capabilities (NEW)**: Conditional branching, loops, sub-workflows, and dynamic modifications
 
 See `examples/autonomous_researcher.py` for a complete workflow demo.
+See `examples/enhanced_workflow_demo.py` for advanced workflow features (conditionals, loops, sub-workflows).
+See `docs/ENHANCED_WORKFLOW_ORCHESTRATION.md` for comprehensive documentation of new features.
 
 ## Features
 

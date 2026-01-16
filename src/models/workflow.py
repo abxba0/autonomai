@@ -12,6 +12,10 @@ from enum import Enum
 import uuid
 
 
+# Default maximum iterations for loop steps to prevent infinite loops
+DEFAULT_MAX_ITERATIONS = 100
+
+
 class StepStatus(Enum):
     """Status of a workflow step"""
     PENDING = "pending"
@@ -19,6 +23,14 @@ class StepStatus(Enum):
     COMPLETED = "completed"
     FAILED = "failed"
     SKIPPED = "skipped"
+
+
+class StepType(Enum):
+    """Type of workflow step"""
+    STANDARD = "standard"  # Regular execution step
+    CONDITIONAL = "conditional"  # If/else or switch/case branching
+    LOOP = "loop"  # While, for, foreach iteration
+    SUBWORKFLOW = "subworkflow"  # Nested workflow execution
 
 
 class FailureSource(Enum):
@@ -38,6 +50,7 @@ class WorkflowStep:
         description: Detailed description of what this step should do
         dependencies: List of step IDs that must complete before this step
         status: Current execution status
+        step_type: Type of step (standard, conditional, loop, subworkflow)
         inputs: Input data/parameters for this step
         outputs: Output data produced by this step
         error_message: Error details if step failed
@@ -45,12 +58,27 @@ class WorkflowStep:
         created_at: Timestamp when step was created
         started_at: Timestamp when execution started
         completed_at: Timestamp when execution completed
+        
+        # Conditional-specific attributes
+        condition: Optional condition expression for conditional/loop steps
+        branches: Dict of branch_name -> list of step IDs for conditional steps
+        
+        # Loop-specific attributes
+        loop_type: Type of loop (while, for, foreach)
+        loop_variable: Variable name for loop iteration
+        loop_collection: Collection to iterate over (for foreach)
+        max_iterations: Maximum iterations to prevent infinite loops
+        
+        # Subworkflow-specific attributes
+        subworkflow_id: ID of the subworkflow to execute
+        subworkflow_plan: Nested WorkflowPlan for subworkflows
     """
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     name: str = ""
     description: str = ""
     dependencies: List[str] = field(default_factory=list)
     status: StepStatus = StepStatus.PENDING
+    step_type: StepType = StepType.STANDARD
     inputs: Dict[str, Any] = field(default_factory=dict)
     outputs: Dict[str, Any] = field(default_factory=dict)
     error_message: Optional[str] = None
@@ -59,14 +87,30 @@ class WorkflowStep:
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     
+    # Conditional-specific attributes
+    condition: Optional[str] = None
+    branches: Dict[str, List[str]] = field(default_factory=dict)
+    
+    # Loop-specific attributes
+    loop_type: Optional[str] = None  # "while", "for", "foreach"
+    loop_variable: Optional[str] = None
+    loop_collection: Optional[List[Any]] = None
+    max_iterations: int = field(default_factory=lambda: DEFAULT_MAX_ITERATIONS)
+    iteration_count: int = 0
+    
+    # Subworkflow-specific attributes
+    subworkflow_id: Optional[str] = None
+    subworkflow_plan: Optional['WorkflowPlan'] = None
+    
     def to_dict(self) -> Dict[str, Any]:
         """Convert step to dictionary"""
-        return {
+        result = {
             "id": self.id,
             "name": self.name,
             "description": self.description,
             "dependencies": self.dependencies,
             "status": self.status.value,
+            "step_type": self.step_type.value,
             "inputs": self.inputs,
             "outputs": self.outputs,
             "error_message": self.error_message,
@@ -75,6 +119,27 @@ class WorkflowStep:
             "started_at": self.started_at.isoformat() if self.started_at else None,
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
         }
+        
+        # Add conditional-specific fields
+        if self.step_type == StepType.CONDITIONAL:
+            result["condition"] = self.condition
+            result["branches"] = self.branches
+        
+        # Add loop-specific fields
+        if self.step_type == StepType.LOOP:
+            result["loop_type"] = self.loop_type
+            result["loop_variable"] = self.loop_variable
+            result["loop_collection"] = self.loop_collection
+            result["max_iterations"] = self.max_iterations
+            result["iteration_count"] = self.iteration_count
+        
+        # Add subworkflow-specific fields
+        if self.step_type == StepType.SUBWORKFLOW:
+            result["subworkflow_id"] = self.subworkflow_id
+            if self.subworkflow_plan:
+                result["subworkflow_plan"] = self.subworkflow_plan.to_dict()
+        
+        return result
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "WorkflowStep":
@@ -85,10 +150,19 @@ class WorkflowStep:
             description=data.get("description", ""),
             dependencies=data.get("dependencies", []),
             status=StepStatus(data.get("status", "pending")),
+            step_type=StepType(data.get("step_type", "standard")),
             inputs=data.get("inputs", {}),
             outputs=data.get("outputs", {}),
             error_message=data.get("error_message"),
             execution_log=data.get("execution_log", []),
+            condition=data.get("condition"),
+            branches=data.get("branches", {}),
+            loop_type=data.get("loop_type"),
+            loop_variable=data.get("loop_variable"),
+            loop_collection=data.get("loop_collection"),
+            max_iterations=data.get("max_iterations", DEFAULT_MAX_ITERATIONS),
+            iteration_count=data.get("iteration_count", 0),
+            subworkflow_id=data.get("subworkflow_id"),
         )
         
         # Parse timestamps
@@ -98,6 +172,10 @@ class WorkflowStep:
             step.started_at = datetime.fromisoformat(data["started_at"])
         if data.get("completed_at"):
             step.completed_at = datetime.fromisoformat(data["completed_at"])
+        
+        # Parse subworkflow plan if present
+        if data.get("subworkflow_plan"):
+            step.subworkflow_plan = WorkflowPlan.from_dict(data["subworkflow_plan"])
             
         return step
 
@@ -219,6 +297,71 @@ class WorkflowPlan:
             plan.completed_at = datetime.fromisoformat(data["completed_at"])
             
         return plan
+    
+    def insert_step(self, step: WorkflowStep, after_step_id: Optional[str] = None) -> bool:
+        """
+        Dynamically insert a new step into the workflow
+        
+        Args:
+            step: The step to insert
+            after_step_id: ID of step to insert after. If None, appends to end
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if after_step_id is None:
+            self.steps.append(step)
+            return True
+        
+        for i, s in enumerate(self.steps):
+            if s.id == after_step_id:
+                self.steps.insert(i + 1, step)
+                return True
+        
+        return False
+    
+    def remove_step(self, step_id: str) -> bool:
+        """
+        Dynamically remove a step from the workflow
+        
+        Args:
+            step_id: ID of the step to remove
+            
+        Returns:
+            True if successful, False if step not found
+        """
+        for i, step in enumerate(self.steps):
+            if step.id == step_id:
+                # Check if any other steps depend on this one
+                for other_step in self.steps:
+                    if step_id in other_step.dependencies:
+                        other_step.dependencies.remove(step_id)
+                
+                self.steps.pop(i)
+                return True
+        
+        return False
+    
+    def update_step(self, step_id: str, updates: Dict[str, Any]) -> bool:
+        """
+        Dynamically update a step's attributes
+        
+        Args:
+            step_id: ID of the step to update
+            updates: Dictionary of attribute updates
+            
+        Returns:
+            True if successful, False if step not found
+        """
+        step = self.get_step_by_id(step_id)
+        if not step:
+            return False
+        
+        for key, value in updates.items():
+            if hasattr(step, key):
+                setattr(step, key, value)
+        
+        return True
 
 
 @dataclass
