@@ -13,14 +13,14 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     JSON,
+    Index,
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 import os
 from dotenv import load_dotenv
 
-from ..models.config import SystemConfig
-from ..models.failure import FailureEntry
+from ..models.config import SystemConfig, FailureEntry
 from ..models.version import VersionMetadata, InstructionVersion
 
 # Load environment variables
@@ -50,6 +50,7 @@ class DBFailureEntry(Base):
     resolution_notes = Column(Text, nullable=True)
     affected_appendix_rules = Column(JSON, default=list)
     failure_signature = Column(String)
+    tenant_id = Column(String, default="default", nullable=False, index=True)
 
 
 class DBVersionMetadata(Base):
@@ -144,23 +145,30 @@ class DatabaseManager:
                 resolution_notes=failure.resolution_notes,
                 affected_appendix_rules=failure.affected_appendix_rules,
                 failure_signature=failure.failure_signature,
+                tenant_id=getattr(failure, 'tenant_id', 'default'),
             )
             session.add(db_failure)
             session.commit()
 
-    def get_failure(self, failure_id: str) -> Optional[FailureEntry]:
-        """Get failure entry by ID"""
+    def get_failure(self, failure_id: str, tenant_id: Optional[str] = None) -> Optional[FailureEntry]:
+        """Get failure entry by ID, optionally filtered by tenant"""
         with self.get_session() as session:
-            db_failure = session.query(DBFailureEntry).filter_by(id=failure_id).first()
+            query = session.query(DBFailureEntry).filter_by(id=failure_id)
+            if tenant_id:
+                query = query.filter_by(tenant_id=tenant_id)
+            db_failure = query.first()
             if db_failure:
                 return self._db_failure_to_model(db_failure)
         return None
 
-    def get_recent_failures(self, limit: int = 10) -> List[FailureEntry]:
-        """Get recent failure entries"""
+    def get_recent_failures(self, limit: int = 10, tenant_id: Optional[str] = None) -> List[FailureEntry]:
+        """Get recent failure entries, optionally filtered by tenant"""
         with self.get_session() as session:
+            query = session.query(DBFailureEntry)
+            if tenant_id:
+                query = query.filter_by(tenant_id=tenant_id)
             db_failures = (
-                session.query(DBFailureEntry)
+                query
                 .order_by(DBFailureEntry.timestamp.desc())
                 .limit(limit)
                 .all()
@@ -168,19 +176,31 @@ class DatabaseManager:
             return [self._db_failure_to_model(f) for f in db_failures]
 
     def count_failures_by_signature(
-        self, signature: str, window_hours: int = 24
+        self, signature: str, window_hours: int = 24, tenant_id: Optional[str] = None
     ) -> int:
-        """Count failures with same signature in time window"""
+        """Count failures with same signature in time window, optionally filtered by tenant"""
         with self.get_session() as session:
             from datetime import datetime, timedelta
 
             cutoff = datetime.utcnow() - timedelta(hours=window_hours)
-            return (
+            query = (
                 session.query(DBFailureEntry)
                 .filter(DBFailureEntry.failure_signature == signature)
                 .filter(DBFailureEntry.timestamp >= cutoff)
-                .count()
             )
+            if tenant_id:
+                query = query.filter_by(tenant_id=tenant_id)
+            return query.count()
+
+    def get_failures_by_tenant(self, tenant_id: str, limit: Optional[int] = None) -> List[FailureEntry]:
+        """Get all failures for a specific tenant"""
+        with self.get_session() as session:
+            query = session.query(DBFailureEntry).filter_by(tenant_id=tenant_id)
+            query = query.order_by(DBFailureEntry.timestamp.desc())
+            if limit:
+                query = query.limit(limit)
+            db_failures = query.all()
+            return [self._db_failure_to_model(f) for f in db_failures]
 
     # Version Operations
 
@@ -313,6 +333,7 @@ class DatabaseManager:
             resolution_notes=db_failure.resolution_notes,
             affected_appendix_rules=db_failure.affected_appendix_rules,
             failure_signature=db_failure.failure_signature,
+            tenant_id=getattr(db_failure, 'tenant_id', 'default'),
         )
 
     def cleanup_old_data(self, max_age_days: int = 90):
