@@ -8,15 +8,15 @@ import tempfile
 import shutil
 from pathlib import Path
 
-# Add src directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+# Add project root to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
 def test_imports():
     """Test that basic imports work"""
-    from models.config import SystemConfig, FailureEntry
-    from models.critic_response import CriticResponse
-    from core.validator import ValidationPipeline, JSONValidator
+    from src.models.config import SystemConfig, FailureEntry
+    from src.models.critic_response import CriticResponse
+    from src.core.validator import ValidationPipeline, JSONValidator
 
     assert SystemConfig is not None
     assert FailureEntry is not None
@@ -29,7 +29,7 @@ def test_imports():
 
 def test_system_config():
     """Test SystemConfig creation"""
-    from models.config import SystemConfig
+    from src.models.config import SystemConfig
 
     config = SystemConfig(
         main_model="test-model",
@@ -46,7 +46,7 @@ def test_system_config():
 
 def test_failure_entry():
     """Test FailureEntry creation"""
-    from models.config import FailureEntry
+    from src.models.config import FailureEntry
 
     failure = FailureEntry(
         trigger_type="auto_validation",
@@ -66,7 +66,7 @@ def test_failure_entry():
 
 def test_critic_response():
     """Test CriticResponse creation and validation"""
-    from models.critic_response import CriticResponse
+    from src.models.critic_response import CriticResponse
 
     # Valid response
     response = CriticResponse(
@@ -92,7 +92,7 @@ def test_critic_response():
 
 def test_validators():
     """Test validator functionality"""
-    from core.validator import ValidationPipeline, JSONValidator, LengthValidator
+    from src.core.validator import ValidationPipeline, JSONValidator, LengthValidator
 
     pipeline = ValidationPipeline()
     pipeline.add_validator(JSONValidator(required_fields=["status"]))
@@ -118,7 +118,7 @@ def test_validators():
 
 def test_system_in_temp_dir():
     """Test system functionality in temporary directory"""
-    from models.config import SystemConfig
+    from src.models.config import SystemConfig
     from src import SelfOptimizingSystem
 
     # Create temporary directory

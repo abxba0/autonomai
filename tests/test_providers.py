@@ -9,19 +9,19 @@ import shutil
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-# Add src directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+# Add project root to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-import models.config
-from models.config import SystemConfig
-from core.main_model import MainModel
-from core.critic_model import CriticModel
-from core.instruction_manager import InstructionManager
+import src.models.config
+from src.models.config import SystemConfig
+from src.core.main_model import MainModel
+from src.core.critic_model import CriticModel
+from src.core.instruction_manager import InstructionManager
 
 
 def test_provider_detection():
     """Test automatic provider detection from model names"""
-    from core.main_model import MainModel
+    from src.core.main_model import MainModel
 
     temp_dir = tempfile.mkdtemp()
     try:

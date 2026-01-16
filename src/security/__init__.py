@@ -25,11 +25,13 @@ from .rate_limit import (
     RateLimiter,
     APIKeyManager,
     RateLimitConfig,
+    RateLimitStrategy,
     check_rate_limit,
     validate_api_key,
 )
 from .audit import (
     AuditLogger,
+    AuditEvent,
     AuditEventType,
     AuditSeverity,
     SecurityMonitor,
@@ -67,10 +69,12 @@ __all__ = [
     "RateLimiter",
     "APIKeyManager",
     "RateLimitConfig",
+    "RateLimitStrategy",
     "check_rate_limit",
     "validate_api_key",
     # Audit logging
     "AuditLogger",
+    "AuditEvent",
     "AuditEventType",
     "AuditSeverity",
     "SecurityMonitor",

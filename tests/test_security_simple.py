@@ -5,11 +5,11 @@ Simple test script for security features (without full system dependencies)
 import sys
 import os
 
-# Add src directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src", "security"))
+# Add project root to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-# Import security modules directly
-from auth import (
+# Import security modules
+from src.security.auth import (
     Role,
     authenticate_user,
     create_access_token,
@@ -17,11 +17,11 @@ from auth import (
     verify_token,
 )
 
-from validation import sanitize_input, validate_input
+from src.security.validation import sanitize_input, validate_input
 
-from rate_limit import RateLimiter, APIKeyManager, RateLimitConfig, RateLimitStrategy
+from src.security.rate_limit import RateLimiter, APIKeyManager, RateLimitConfig, RateLimitStrategy
 
-from audit import (
+from src.security.audit import (
     AuditLogger,
     AuditEvent,
     AuditEventType,

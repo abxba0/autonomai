@@ -8,12 +8,12 @@ import tempfile
 import shutil
 from pathlib import Path
 
-# Add src directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+# Add project root to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from core.correction_detector import CorrectionDetector
-from core.context_analyzer import ContextAnalyzer
-from models.config import SystemConfig
+from src.core.correction_detector import CorrectionDetector
+from src.core.context_analyzer import ContextAnalyzer
+from src.models.config import SystemConfig
 
 
 def test_correction_detector_direct_negation():

@@ -24,10 +24,10 @@ from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from enum import Enum
 
-# Add src directory to path
+# Add project root to path (parent of tests directory)
 test_dir = os.path.dirname(__file__)
-src_dir = os.path.join(test_dir, "..", "src")
-sys.path.insert(0, src_dir)
+project_root = os.path.join(test_dir, "..")
+sys.path.insert(0, project_root)
 
 
 class TestCategory(Enum):

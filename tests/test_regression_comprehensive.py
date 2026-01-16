@@ -21,10 +21,10 @@ import tempfile
 import shutil
 from pathlib import Path
 
-# Add src directory to path
+# Add project root to path (parent of tests directory)
 test_dir = os.path.dirname(__file__)
-src_dir = os.path.join(test_dir, "..", "src")
-sys.path.insert(0, src_dir)
+project_root = os.path.join(test_dir, "..")
+sys.path.insert(0, project_root)
 
 # Import regression framework
 from regression_suite import (
@@ -74,7 +74,7 @@ class CorePipelineTests:
         def test():
             try:
                 from src.core.instruction_manager import InstructionManager
-                from models.config import SystemConfig
+                from src.models.config import SystemConfig
                 
                 config = SystemConfig(instructions_dir=Path(self.temp_dir))
                 manager = InstructionManager(config)
@@ -83,7 +83,7 @@ class CorePipelineTests:
                 inst_file = Path(self.temp_dir) / "instructions.md"
                 inst_file.write_text("Test instruction content")
                 
-                instructions = manager.get_current_instructions()
+                instructions = manager.get_full_instructions()
                 assert len(instructions) > 0
             except ImportError as e:
                 print(f"  Note: Test skipped - {e}")
@@ -98,7 +98,7 @@ class CorePipelineTests:
         """Test validation pipeline with multiple validators"""
         def test():
             try:
-                from core.validator import ValidationPipeline, JSONValidator, LengthValidator
+                from src.core.validator import ValidationPipeline, JSONValidator, LengthValidator
                 
                 pipeline = ValidationPipeline()
                 pipeline.add_validator(JSONValidator(required_fields=["status"]))
@@ -109,8 +109,8 @@ class CorePipelineTests:
                 passed, _ = pipeline.validate(valid_json)
                 assert passed, "Valid JSON should pass"
                 
-                # Test invalid input
-                invalid_json = '{"status": "ok"}'  # Too short
+                # Test invalid input (missing required field)
+                invalid_json = '{"message": "ok"}'  # Missing 'status' field
                 passed, _ = pipeline.validate(invalid_json)
                 assert not passed, "Invalid JSON should fail"
             except ImportError as e:
@@ -125,7 +125,7 @@ class CorePipelineTests:
     def test_failure_logging(self):
         """Test failure entry creation and logging"""
         def test():
-            from models.config import FailureEntry
+            from src.models.config import FailureEntry
             
             failure = FailureEntry(
                 trigger_type="auto_validation",
@@ -165,7 +165,7 @@ class WorkflowTests:
         """Test workflow plan creation and validation"""
         def test():
             try:
-                from models.workflow import WorkflowPlan, WorkflowStep, StepStatus
+                from src.models.workflow import WorkflowPlan, WorkflowStep, StepStatus
                 
                 plan = WorkflowPlan(
                     name="Test Workflow",
@@ -196,7 +196,7 @@ class WorkflowTests:
         """Test workflow step dependency resolution"""
         def test():
             try:
-                from models.workflow import WorkflowPlan, WorkflowStep, StepStatus
+                from src.models.workflow import WorkflowPlan, WorkflowStep, StepStatus
                 
                 plan = WorkflowPlan(name="Test", goal="Test", steps=[])
                 
@@ -245,10 +245,9 @@ class CachingTests:
         """Test cache manager initialization"""
         def test():
             try:
-                from cache import CacheManager
-                from models.config import SystemConfig
-                
-                config = SystemConfig(enable_caching=False)  # Use in-memory
+                from src.cache.manager import CacheManager, CacheConfig
+
+                config = CacheConfig(enabled=False)  # Use in-memory
                 cache = CacheManager(config)
                 assert cache is not None
             except Exception as e:
@@ -266,19 +265,18 @@ class CachingTests:
         """Test cache hit rate performance"""
         def test():
             try:
-                from cache import CacheManager
-                from models.config import SystemConfig
-                
-                config = SystemConfig(enable_caching=False)
+                from src.cache.manager import CacheManager, CacheConfig
+
+                config = CacheConfig(enabled=True)  # Enable in-memory cache
                 cache = CacheManager(config)
-                
+
                 # Set a value
                 cache.set("test_key", "test_value", ttl=60)
-                
+
                 # Get the value (should be cache hit)
                 value = cache.get("test_key")
                 assert value == "test_value", "Cache should return correct value"
-                
+
             except Exception as e:
                 print(f"  Note: Cache test skipped - {e}")
 
@@ -305,7 +303,7 @@ class SecurityTests:
         """Test input sanitization and validation"""
         def test():
             try:
-                from security.validation import InputValidator
+                from src.security.validation import InputValidator
                 
                 validator = InputValidator()
                 
@@ -332,7 +330,7 @@ class SecurityTests:
         """Test rate limiting configuration"""
         def test():
             try:
-                from security.rate_limit import RateLimitConfig
+                from src.security.rate_limit import RateLimitConfig
                 
                 config = RateLimitConfig(
                     requests_per_minute=60,
@@ -368,7 +366,7 @@ class EdgeCaseTests:
         def test():
             try:
                 from src.core.instruction_manager import InstructionManager
-                from models.config import SystemConfig
+                from src.models.config import SystemConfig
                 
                 with tempfile.TemporaryDirectory() as tmpdir:
                     config = SystemConfig(instructions_dir=Path(tmpdir))
@@ -378,7 +376,7 @@ class EdgeCaseTests:
                     inst_file = Path(tmpdir) / "instructions.md"
                     inst_file.write_text("")
                     
-                    instructions = manager.get_current_instructions()
+                    instructions = manager.get_full_instructions()
                     # Should handle gracefully, not crash
                     assert instructions is not None
             except ImportError as e:
@@ -394,14 +392,15 @@ class EdgeCaseTests:
         """Test handling of very large input strings"""
         def test():
             try:
-                from core.validator import LengthValidator
-                
-                validator = LengthValidator(max_length=1000)
-                
+                from src.core.validator import ValidationPipeline, LengthValidator
+
+                pipeline = ValidationPipeline()
+                pipeline.add_validator(LengthValidator(max_length=1000))
+
                 # Create large input (10KB)
                 large_input = "x" * 10000
-                
-                passed, results = validator.validate(large_input, {})
+
+                passed, results = pipeline.validate(large_input)
                 assert not passed, "Very large input should fail validation"
             except ImportError as e:
                 print(f"  Note: Test skipped - {e}")
@@ -415,7 +414,7 @@ class EdgeCaseTests:
     def test_special_characters_in_query(self):
         """Test handling of special characters"""
         def test():
-            from models.config import FailureEntry
+            from src.models.config import FailureEntry
             
             # Test with special characters
             special_chars = "Test with 特殊文字 and émojis 🚀"
@@ -470,19 +469,20 @@ class EdgeCaseTests:
         """Test handling of malformed JSON input"""
         def test():
             try:
-                from core.validator import JSONValidator
-                
-                validator = JSONValidator(required_fields=["status"])
-                
+                from src.core.validator import ValidationPipeline, JSONValidator
+
+                pipeline = ValidationPipeline()
+                pipeline.add_validator(JSONValidator(required_fields=["status"]))
+
                 malformed_inputs = [
                     "{invalid json}",
                     "{'single': 'quotes'}",
                     "{unquoted: value}",
                     '{"unclosed": "string}',
                 ]
-                
+
                 for bad_json in malformed_inputs:
-                    passed, _ = validator.validate(bad_json, {})
+                    passed, _ = pipeline.validate(bad_json)
                     assert not passed, f"Malformed JSON should fail: {bad_json}"
             except ImportError as e:
                 print(f"  Note: Test skipped - {e}")
@@ -512,7 +512,7 @@ class PluginSystemTests:
         """Test plugin manager can initialize"""
         def test():
             try:
-                from plugins import PluginManager
+                from src.plugins import PluginManager
                 
                 manager = PluginManager()
                 assert manager is not None
@@ -530,7 +530,7 @@ class PluginSystemTests:
         """Test plugin metadata creation"""
         def test():
             try:
-                from plugins import PluginMetadata
+                from src.plugins import PluginMetadata
                 
                 metadata = PluginMetadata(
                     name="test_plugin",
@@ -615,7 +615,7 @@ def run_ab_tests(suite: RegressionTestSuite):
         def variant_a_no_cache():
             """Variant A: No caching"""
             try:
-                from core.validator import JSONValidator
+                from src.core.validator import JSONValidator
                 validator = JSONValidator(required_fields=["status"])
                 validator.validate('{"status": "ok"}', {})
             except ImportError:
@@ -624,7 +624,7 @@ def run_ab_tests(suite: RegressionTestSuite):
         def variant_b_cached():
             """Variant B: With simple result caching"""
             try:
-                from core.validator import JSONValidator
+                from src.core.validator import JSONValidator
                 validator = JSONValidator(required_fields=["status"])
                 # Simulate cached validation (same call)
                 validator.validate('{"status": "ok"}', {})
