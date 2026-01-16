@@ -12,6 +12,10 @@ from enum import Enum
 import uuid
 
 
+# Default maximum iterations for loop steps to prevent infinite loops
+DEFAULT_MAX_ITERATIONS = 100
+
+
 class StepStatus(Enum):
     """Status of a workflow step"""
     PENDING = "pending"
@@ -91,7 +95,7 @@ class WorkflowStep:
     loop_type: Optional[str] = None  # "while", "for", "foreach"
     loop_variable: Optional[str] = None
     loop_collection: Optional[List[Any]] = None
-    max_iterations: int = 100
+    max_iterations: int = field(default_factory=lambda: DEFAULT_MAX_ITERATIONS)
     iteration_count: int = 0
     
     # Subworkflow-specific attributes
@@ -156,7 +160,7 @@ class WorkflowStep:
             loop_type=data.get("loop_type"),
             loop_variable=data.get("loop_variable"),
             loop_collection=data.get("loop_collection"),
-            max_iterations=data.get("max_iterations", 100),
+            max_iterations=data.get("max_iterations", DEFAULT_MAX_ITERATIONS),
             iteration_count=data.get("iteration_count", 0),
             subworkflow_id=data.get("subworkflow_id"),
         )

@@ -595,10 +595,15 @@ Expected format:
             safe_dict.update(context)
             
             # Evaluate the condition
+            # Note: This uses eval() with restricted builtins for safety.
+            # For production, consider using a safer expression parser like
+            # simpleeval or ast.literal_eval for simple expressions.
             result = eval(condition, safe_dict)
             return bool(result)
         except Exception as e:
-            print(f"Warning: Failed to evaluate condition '{condition}': {e}")
+            # Log error instead of printing
+            import logging
+            logging.warning(f"Failed to evaluate condition '{condition}': {e}")
             return False
 
     def execute_conditional_step(
@@ -818,18 +823,36 @@ Expected format:
             ctx = context or {}
             subworkflow.started_at = datetime.now()
             
-            # Simple sequential execution of subworkflow
-            for sub_step in subworkflow.steps:
-                if sub_step.status != StepStatus.PENDING:
-                    continue
+            # Execute subworkflow respecting dependencies (like main workflow)
+            max_subworkflow_iterations = len(subworkflow.steps) * 2 + 10
+            iteration_count = 0
+            
+            while not subworkflow.is_complete() and iteration_count < max_subworkflow_iterations:
+                iteration_count += 1
+                ready_steps = subworkflow.get_ready_steps()
                 
-                # Execute based on step type
-                result = self._execute_step_by_type(subworkflow.id, sub_step.id, ctx)
+                if not ready_steps:
+                    # Check if there are failures blocking progress
+                    if subworkflow.has_failures():
+                        failed_step = subworkflow.get_failed_steps()[0]
+                        step.status = StepStatus.FAILED
+                        step.error_message = f"Subworkflow step failed: {failed_step.error_message}"
+                        return {
+                            "success": False,
+                            "step_id": step_id,
+                            "status": "failed",
+                            "error": step.error_message,
+                        }
+                    break
                 
-                if not result["success"]:
-                    step.status = StepStatus.FAILED
-                    step.error_message = f"Subworkflow step failed: {result.get('error')}"
-                    return result
+                # Execute ready steps
+                for sub_step in ready_steps:
+                    result = self._execute_step_by_type(subworkflow.id, sub_step.id, ctx)
+                    
+                    if not result["success"]:
+                        step.status = StepStatus.FAILED
+                        step.error_message = f"Subworkflow step failed: {result.get('error')}"
+                        return result
             
             subworkflow.completed_at = datetime.now()
             
