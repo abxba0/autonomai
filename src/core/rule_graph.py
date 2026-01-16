@@ -408,6 +408,217 @@ class RuleGraph:
 
         return migrated_count
 
+    def auto_organize_hierarchy(self, tenant_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Automatically organize rules into a hierarchy based on their content and specificity.
+        
+        This method analyzes rule text to:
+        1. Identify general vs. specific rules
+        2. Group related rules together
+        3. Establish parent-child relationships
+        4. Update rule priorities based on hierarchy level
+        
+        Args:
+            tenant_id: Optional tenant filter
+            
+        Returns:
+            Dictionary with organization statistics
+        """
+        stats = {
+            "total_rules": 0,
+            "roots_created": 0,
+            "relationships_added": 0,
+            "categories_analyzed": {},
+        }
+        
+        # Get all active rules
+        rules = self.get_active_rules(tenant_id)
+        stats["total_rules"] = len(rules)
+        
+        if not rules:
+            return stats
+        
+        # Group rules by category
+        category_groups = {}
+        for rule in rules:
+            if rule.category not in category_groups:
+                category_groups[rule.category] = []
+            category_groups[rule.category].append(rule)
+        
+        # Process each category
+        for category, category_rules in category_groups.items():
+            stats["categories_analyzed"][category] = len(category_rules)
+            
+            # Skip if only one rule in category
+            if len(category_rules) <= 1:
+                continue
+            
+            # Analyze rules and create hierarchy
+            # Rules with shorter text are typically more general
+            # Rules with longer, more specific text are typically children
+            sorted_rules = sorted(category_rules, key=lambda r: len(r.rule_text))
+            
+            # The shortest rules are likely parents (general rules)
+            # Assign them as roots if they don't have parents
+            potential_roots = sorted_rules[:max(1, len(sorted_rules) // 3)]
+            
+            for root_rule in potential_roots:
+                if not root_rule.parent_id:
+                    stats["roots_created"] += 1
+            
+            # For remaining rules, try to find parent relationships
+            for i, rule in enumerate(sorted_rules):
+                if rule.parent_id:
+                    # Already has a parent
+                    continue
+                
+                # Look for a potential parent (shorter, more general rule)
+                best_parent = None
+                best_similarity = 0
+                
+                for potential_parent in sorted_rules[:i]:
+                    # Skip self and rules that are too similar in length
+                    if potential_parent.id == rule.id:
+                        continue
+                    if abs(len(potential_parent.rule_text) - len(rule.rule_text)) < 10:
+                        continue
+                    
+                    # Calculate simple word overlap similarity
+                    similarity = self._calculate_rule_similarity(
+                        rule.rule_text, potential_parent.rule_text
+                    )
+                    
+                    if similarity > best_similarity and similarity > 0.3:
+                        best_similarity = similarity
+                        best_parent = potential_parent
+                
+                # Assign parent if found
+                if best_parent and not rule.parent_id:
+                    rule.parent_id = best_parent.id
+                    if rule.id not in best_parent.child_ids:
+                        best_parent.child_ids.append(rule.id)
+                    stats["relationships_added"] += 1
+                    
+                    # Update priority based on depth (children have lower priority)
+                    rule.priority = max(1, best_parent.priority - 1)
+        
+        self.save()
+        return stats
+    
+    def _calculate_rule_similarity(self, text1: str, text2: str) -> float:
+        """
+        Calculate similarity between two rule texts using word overlap.
+        
+        Args:
+            text1: First rule text
+            text2: Second rule text
+            
+        Returns:
+            Similarity score between 0 and 1
+        """
+        # Tokenize and normalize
+        words1 = set(text1.lower().split())
+        words2 = set(text2.lower().split())
+        
+        # Remove common words that don't add much meaning
+        stop_words = {'a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
+                     'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'be', 'been'}
+        words1 = words1 - stop_words
+        words2 = words2 - stop_words
+        
+        if not words1 or not words2:
+            return 0.0
+        
+        # Calculate Jaccard similarity
+        intersection = len(words1 & words2)
+        union = len(words1 | words2)
+        
+        return intersection / union if union > 0 else 0.0
+    
+    def suggest_categorization(self, rule_text: str) -> str:
+        """
+        Suggest a category for a rule based on its content.
+        
+        Args:
+            rule_text: The rule text to categorize
+            
+        Returns:
+            Suggested category name
+        """
+        text_lower = rule_text.lower()
+        
+        # Category keywords mapping
+        category_keywords = {
+            "validation": ["validate", "validation", "check", "verify", "ensure", "must", "required"],
+            "security": ["security", "secure", "auth", "encrypt", "password", "token", "permission"],
+            "formatting": ["format", "style", "indent", "spacing", "case", "naming"],
+            "error-handling": ["error", "exception", "fail", "fallback", "retry", "catch"],
+            "performance": ["performance", "optimize", "cache", "fast", "efficient", "speed"],
+            "testing": ["test", "mock", "assert", "coverage", "unit", "integration"],
+            "documentation": ["document", "comment", "docstring", "readme", "explain"],
+            "api": ["api", "endpoint", "route", "request", "response", "http"],
+            "database": ["database", "query", "sql", "table", "schema", "migration"],
+            "logging": ["log", "logging", "debug", "trace", "monitor"],
+        }
+        
+        # Count keyword matches for each category
+        category_scores = {}
+        for category, keywords in category_keywords.items():
+            score = sum(1 for keyword in keywords if keyword in text_lower)
+            if score > 0:
+                category_scores[category] = score
+        
+        # Return category with highest score, or "general" if none match
+        if category_scores:
+            return max(category_scores.items(), key=lambda x: x[1])[0]
+        return "general"
+    
+    def auto_categorize_rules(self, tenant_id: Optional[str] = None, recategorize_all: bool = False) -> Dict[str, Any]:
+        """
+        Automatically categorize rules based on their content.
+        
+        Args:
+            tenant_id: Optional tenant filter
+            recategorize_all: If True, recategorize all rules. If False, only categorize "general" rules.
+            
+        Returns:
+            Dictionary with categorization statistics
+        """
+        stats = {
+            "total_rules": 0,
+            "recategorized": 0,
+            "categories": {},
+        }
+        
+        rules = self.get_active_rules(tenant_id)
+        stats["total_rules"] = len(rules)
+        
+        for rule in rules:
+            # Skip if already categorized (unless recategorize_all is True)
+            if not recategorize_all and rule.category != "general":
+                continue
+            
+            # Suggest new category
+            suggested_category = self.suggest_categorization(rule.rule_text)
+            
+            # Update if different
+            if suggested_category != rule.category:
+                old_category = rule.category
+                rule.category = suggested_category
+                stats["recategorized"] += 1
+                
+                # Track category changes
+                if old_category not in stats["categories"]:
+                    stats["categories"][old_category] = {"moved_out": 0, "moved_in": 0}
+                if suggested_category not in stats["categories"]:
+                    stats["categories"][suggested_category] = {"moved_out": 0, "moved_in": 0}
+                
+                stats["categories"][old_category]["moved_out"] += 1
+                stats["categories"][suggested_category]["moved_in"] += 1
+        
+        self.save()
+        return stats
+
 
 class MockRuleGraph(RuleGraph):
     """Mock rule graph for testing without actual storage"""

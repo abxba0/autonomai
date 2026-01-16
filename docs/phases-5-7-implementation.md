@@ -372,7 +372,29 @@ count = graph.migrate_from_markdown(markdown_rules, tenant_id="default")
 print(f"Migrated {count} rules to knowledge graph")
 ```
 
-#### Example 7: Visualizing Hierarchy
+#### Example 7: Automatic Organization
+
+```python
+# After migrating rules from markdown or adding new rules
+# Automatically categorize rules based on their content
+cat_stats = graph.auto_categorize_rules()
+print(f"Recategorized {cat_stats['recategorized']} rules")
+print(f"Categories: {cat_stats['categories']}")
+
+# Automatically organize into hierarchy
+org_stats = graph.auto_organize_hierarchy()
+print(f"Created {org_stats['roots_created']} root rules")
+print(f"Added {org_stats['relationships_added']} parent-child relationships")
+
+# View the organized hierarchy
+hierarchy = graph.get_rule_hierarchy()
+for root in hierarchy['roots']:
+    print(f"Root: {root['rule_text']}")
+    for child in root['children']:
+        print(f"  - {child['rule_text']}")
+```
+
+#### Example 8: Visualizing Hierarchy
 
 ```python
 # Get hierarchy view
@@ -398,12 +420,28 @@ for root in hierarchy['roots']:
 - Track which rules are most effective
 - Better organization than flat markdown
 - Enables rule inheritance for hierarchical policies
+- Automatic organization and categorization available
 
 **Migration Path:**
 1. Use `migrate_from_markdown()` to import existing rules
-2. Manually organize rules into hierarchy
-3. Track effectiveness over time
-4. Periodically review and supersede outdated rules
+2. Use `auto_categorize_rules()` to automatically categorize rules based on content
+3. Use `auto_organize_hierarchy()` to automatically establish parent-child relationships
+4. Track effectiveness over time
+5. Periodically review and supersede outdated rules
+
+**Automatic Organization:**
+
+The knowledge graph now supports automatic organization:
+
+- **`auto_categorize_rules()`**: Automatically categorizes rules based on keywords in their text
+  - Recognizes categories: validation, security, formatting, error-handling, performance, testing, documentation, api, database, logging
+  - Can recategorize all rules or just "general" rules
+  
+- **`auto_organize_hierarchy()`**: Automatically establishes parent-child relationships
+  - Analyzes rule text length and content similarity
+  - Shorter, more general rules become parents
+  - Longer, more specific rules become children
+  - Updates priorities based on hierarchy depth
 
 ---
 
