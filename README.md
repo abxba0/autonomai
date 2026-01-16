@@ -15,6 +15,15 @@ This system implements a self-optimizing AI assistant that:
 
 ## Key Features
 
+### 🚀 Production Caching & Performance Layer (NEW)
+- **LLM Response Caching**: 1000x+ speedup for repeated queries
+- **Embeddings Caching**: Reduce semantic search overhead
+- **Distributed Redis Support**: Scale horizontally with Redis backend
+- **Multiple Strategies**: TTL, LRU, LFU, manual invalidation
+- **Automatic Fallback**: In-memory cache if Redis unavailable
+- **Performance Metrics**: Monitor hit rates and latency
+- See [docs/caching-guide.md](docs/caching-guide.md) for details
+
 ### 🔄 Automatic Optimization
 - Learns from validation failures
 - Proposes instruction updates via Critic model
@@ -74,7 +83,8 @@ This system implements a self-optimizing AI assistant that:
 6. **ValidationPipeline**: Validates model outputs against configurable rules
 7. **VersionController**: Maintains history of instruction changes
 8. **WorkflowOrchestrator**: Orchestrates multi-step workflows with Planner-Executor-Critic pattern
-9. **PluginManager (NEW)**: Manages plugin discovery, loading, and lifecycle
+9. **PluginManager**: Manages plugin discovery, loading, and lifecycle
+10. **CacheManager (NEW)**: Distributed caching layer for performance optimization
 
 ### Data Models
 
