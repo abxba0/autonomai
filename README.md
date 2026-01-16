@@ -851,6 +851,47 @@ curl -X POST http://localhost:8001/batch/submit \
 
 See [docs/batch-processing.md](docs/batch-processing.md) for complete documentation.
 
+## Regression Testing Suite ✨ NEW
+
+The system now includes a comprehensive production-ready regression testing suite with performance benchmarking and CI/CD integration.
+
+### Key Features
+- **Comprehensive Coverage**: Tests for all major pipelines (core, workflow, caching, security, plugins, edge cases)
+- **Performance Benchmarking**: Automatic performance measurement with baseline tracking and 20% regression detection
+- **A/B Testing**: Statistical validation with Welch's t-test and confidence intervals
+- **Golden Dataset Self-Healing**: Automatic deviation detection and self-healing mechanisms
+- **CI/CD Integration**: GitHub Actions workflow with multi-version Python testing (3.8-3.11)
+- **No Mocks**: All tests use real implementations for production confidence
+
+### Quick Start
+```bash
+# Run full test suite
+python tests/test_regression_comprehensive.py
+
+# Or use the quick-start script
+bash tests/run_regression_tests.sh
+
+# Run only core tests (quick)
+bash tests/run_regression_tests.sh --quick
+
+# Run performance benchmarks only
+bash tests/run_regression_tests.sh --benchmark
+```
+
+### CI Integration
+Tests run automatically on:
+- Push to main, develop, or copilot/** branches
+- Pull requests with automated result comments
+- Daily at 2 AM UTC
+- Manual workflow dispatch
+
+### Reports
+- Test results: `tests/regression_reports/regression_report.json`
+- Performance baselines: `tests/data/performance_baseline.json`
+- Comprehensive documentation: [tests/REGRESSION_TESTING_README.md](tests/REGRESSION_TESTING_README.md)
+
+See [Regression Testing Documentation](tests/REGRESSION_TESTING_README.md) for complete details.
+
 ## License
 
 MIT License - see LICENSE file for details.
