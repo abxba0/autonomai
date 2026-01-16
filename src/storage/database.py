@@ -612,16 +612,50 @@ class DatabaseManager:
             with self.get_session() as session:
                 db_config = session.query(DBTenantConfig).filter_by(tenant_id=config.tenant_id).first()
                 
-                config_dict = config.to_dict()
                 if db_config:
                     # Update existing
-                    for key, value in config_dict.items():
-                        if key != "tenant_id" and hasattr(db_config, key):
-                            setattr(db_config, key, value)
+                    db_config.anthropic_api_key = config.anthropic_api_key
+                    db_config.openai_api_key = config.openai_api_key
+                    db_config.google_api_key = config.google_api_key
+                    db_config.deepseek_api_key = config.deepseek_api_key
+                    db_config.openrouter_api_key = config.openrouter_api_key
+                    db_config.default_main_model = config.default_main_model
+                    db_config.default_critic_model = config.default_critic_model
+                    db_config.default_main_provider = config.default_main_provider
+                    db_config.default_critic_provider = config.default_critic_provider
+                    db_config.enable_auto_optimization = config.enable_auto_optimization
+                    db_config.enable_correction_detection = config.enable_correction_detection
+                    db_config.enable_judge_model = config.enable_judge_model
+                    db_config.enable_regression_testing = config.enable_regression_testing
+                    db_config.enable_multimodal = config.enable_multimodal
+                    db_config.enable_workflow_orchestrator = config.enable_workflow_orchestrator
+                    db_config.enable_plugin_system = config.enable_plugin_system
+                    db_config.custom_validators = config.custom_validators
+                    db_config.config_version = config.config_version
                     db_config.updated_at = datetime.utcnow()
                 else:
                     # Create new
-                    db_config = DBTenantConfig(**config_dict)
+                    db_config = DBTenantConfig(
+                        tenant_id=config.tenant_id,
+                        anthropic_api_key=config.anthropic_api_key,
+                        openai_api_key=config.openai_api_key,
+                        google_api_key=config.google_api_key,
+                        deepseek_api_key=config.deepseek_api_key,
+                        openrouter_api_key=config.openrouter_api_key,
+                        default_main_model=config.default_main_model,
+                        default_critic_model=config.default_critic_model,
+                        default_main_provider=config.default_main_provider,
+                        default_critic_provider=config.default_critic_provider,
+                        enable_auto_optimization=config.enable_auto_optimization,
+                        enable_correction_detection=config.enable_correction_detection,
+                        enable_judge_model=config.enable_judge_model,
+                        enable_regression_testing=config.enable_regression_testing,
+                        enable_multimodal=config.enable_multimodal,
+                        enable_workflow_orchestrator=config.enable_workflow_orchestrator,
+                        enable_plugin_system=config.enable_plugin_system,
+                        custom_validators=config.custom_validators,
+                        config_version=config.config_version,
+                    )
                     session.add(db_config)
                 
                 session.commit()
