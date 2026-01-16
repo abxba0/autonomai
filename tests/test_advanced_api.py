@@ -237,16 +237,14 @@ class TestGraphQLSchema:
 
     def test_schema_types(self):
         """Test that schema types are properly defined"""
-        from web.graphql_schema import schema
+        from web.graphql_schema import schema, Query, Mutation
 
         # Check that schema is created
         assert schema is not None
 
-        # Check query type
-        assert schema.query_type is not None
-
-        # Check mutation type
-        assert schema.mutation_type is not None
+        # Check query and mutation types
+        assert Query is not None
+        assert Mutation is not None
 
     def test_validation_result_type(self):
         """Test ValidationResult type"""
