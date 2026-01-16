@@ -1,0 +1,57 @@
+# Plugin Configuration Example
+#
+# This file demonstrates how to configure plugins for AutonomAI.
+# Plugins defined here will be automatically loaded when the system starts.
+
+plugins:
+  # Example: Keyword validator plugin
+  - name: keyword_validator
+    module: examples.plugins.keyword_validator_plugin
+    class: KeywordValidatorPlugin
+    config:
+      enabled: true
+      priority: 50
+      settings:
+        required_keywords:
+          - "important"
+          - "verified"
+        forbidden_keywords:
+          - "error"
+          - "failed"
+  
+  # Example: Pattern analyzer plugin
+  - name: pattern_analyzer
+    module: examples.plugins.failure_analyzer_plugin
+    class: PatternAnalyzerPlugin
+    config:
+      enabled: true
+      priority: 100
+      settings:
+        min_pattern_frequency: 3
+        confidence_threshold: 0.7
+  
+  # Example: Data transform step plugin
+  - name: data_transform_step
+    module: examples.plugins.workflow_step_plugin
+    class: DataTransformStepPlugin
+    config:
+      enabled: true
+      priority: 100
+      settings:
+        allowed_transforms:
+          - uppercase
+          - lowercase
+          - reverse
+          - filter
+          - map
+  
+  # Example: Custom API step plugin
+  # - name: custom_api_step
+  #   module: examples.plugins.workflow_step_plugin
+  #   class: CustomAPIStepPlugin
+  #   config:
+  #     enabled: false  # Disabled by default
+  #     priority: 100
+  #     settings:
+  #       timeout: 30
+  #       retry_count: 3

@@ -21,6 +21,14 @@ This system implements a self-optimizing AI assistant that:
 - Maintains safety by checking for conflicts
 - Version-controlled changes with rollback capability
 
+### 🔌 Production-Grade Plugin System (NEW)
+- **Extensible Architecture**: Extend validators, optimizers, and workflow steps
+- **Multiple Discovery Methods**: Entry points, directory scanning, configuration files
+- **Lifecycle Management**: Complete plugin lifecycle (load, initialize, activate, cleanup)
+- **Runtime Loading**: Discover and load plugins at runtime
+- **Example Plugins**: Includes working examples for validators, analyzers, and workflow steps
+- **Full Documentation**: Comprehensive guides for plugin development
+
 ### 🎯 Implicit Negative Feedback Detection
 - **NEW**: Automatically detects when users correct the AI or express dissatisfaction
 - Recognizes patterns like "No, that's not right", "That doesn't help", etc.
@@ -60,7 +68,8 @@ This system implements a self-optimizing AI assistant that:
 5. **InstructionManager**: Manages instruction files and version control
 6. **ValidationPipeline**: Validates model outputs against configurable rules
 7. **VersionController**: Maintains history of instruction changes
-8. **WorkflowOrchestrator (NEW)**: Orchestrates multi-step workflows with Planner-Executor-Critic pattern
+8. **WorkflowOrchestrator**: Orchestrates multi-step workflows with Planner-Executor-Critic pattern
+9. **PluginManager (NEW)**: Manages plugin discovery, loading, and lifecycle
 
 ### Data Models
 
@@ -416,6 +425,100 @@ result = system.execute("Your query here")
 ```
 
 See `examples/multi_provider_usage.py` for more examples.
+
+## Plugin System
+
+### Overview
+
+AutonomAI features a production-grade plugin system that enables developers to extend the system with custom:
+- **Validators**: Custom validation logic for model outputs
+- **Optimizers**: Custom failure analysis and instruction optimization
+- **Workflow Steps**: Custom step executors for workflows
+
+### Quick Start
+
+```python
+from src.plugins import PluginManager, ValidatorPlugin, PluginMetadata
+
+# Create a custom validator plugin
+class MyValidatorPlugin(ValidatorPlugin):
+    @classmethod
+    def get_metadata(cls):
+        return PluginMetadata(
+            name="my_validator",
+            version="1.0.0",
+            author="Your Name",
+            description="Custom validator",
+            plugin_type="validator"
+        )
+    
+    def create_validator(self):
+        # Return your validator implementation
+        pass
+
+# Load and use plugins
+manager = PluginManager()
+manager.discover_and_load_plugins(
+    plugin_dirs=[Path("./plugins")],
+    config_file=Path("./plugin_config.yaml")
+)
+
+# Integrate with system
+system = SelfOptimizingSystem()
+for validator in manager.get_validators_for_pipeline():
+    system.add_validator(validator)
+```
+
+### Plugin Discovery Methods
+
+1. **Entry Points** (recommended for distribution):
+   ```python
+   # setup.py
+   entry_points={
+       "autonomai.plugins": [
+           "my_plugin = my_package.plugin:MyPlugin",
+       ],
+   }
+   ```
+
+2. **Directory Scanning**:
+   ```python
+   manager.discover_and_load_plugins(plugin_dirs=[Path("./plugins")])
+   ```
+
+3. **Configuration File** (YAML/JSON):
+   ```yaml
+   plugins:
+     - name: my_validator
+       module: my_package.plugin
+       class: MyValidatorPlugin
+       config:
+         enabled: true
+         priority: 50
+   ```
+
+### Example Plugins
+
+The repository includes example plugins demonstrating best practices:
+
+- **Keyword Validator**: Validates required and forbidden keywords
+- **Pattern Analyzer**: Extracts patterns from failure logs
+- **Data Transform Step**: Custom workflow step for data transformations
+- **Failure Frequency Analyzer**: Analyzes failure timing patterns
+
+See `examples/plugins/` for complete implementations.
+
+### Documentation
+
+- [Plugin System Guide](docs/plugin-system.md) - Complete architecture and API reference
+- [Plugin Quick Start](examples/plugins/README.md) - Quick reference for developers
+- [Plugin Demo](examples/plugin_system_demo.py) - Working demonstration
+
+### Running the Demo
+
+```bash
+python examples/plugin_system_demo.py
+```
 
 ## Limitations
 
