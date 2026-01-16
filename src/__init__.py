@@ -49,8 +49,20 @@ class SelfOptimizingSystem:
     def __init__(self, config: Optional[SystemConfig] = None):
         self.config = config or SystemConfig()
 
+        # Initialize distributed state manager if enabled
+        self.state_manager = None
+        if self.config.enable_distributed_state:
+            from .storage.distributed_state import DistributedStateManager, DistributedStateConfig
+            
+            state_config = DistributedStateConfig(
+                enabled=True,
+                redis_url=self.config.redis_state_url,
+                lock_timeout=self.config.distributed_lock_timeout,
+            )
+            self.state_manager = DistributedStateManager(state_config)
+
         # Initialize components
-        self.instruction_manager = InstructionManager(self.config)
+        self.instruction_manager = InstructionManager(self.config, state_manager=self.state_manager)
         self.validation_pipeline = ValidationPipeline()
         self.main_model = MainModel(
             self.config, self.instruction_manager, self.validation_pipeline

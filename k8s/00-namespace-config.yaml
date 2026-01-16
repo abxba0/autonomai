@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: autonomai
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: autonomai-config
+  namespace: autonomai
+data:
+  REDIS_URL: "redis://autonomai-redis:6379/0"
+  REDIS_STATE_URL: "redis://autonomai-redis:6379/2"
+  ENABLE_DISTRIBUTED_STATE: "true"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: autonomai-secrets
+  namespace: autonomai
+type: Opaque
+stringData:
+  SECRET_KEY: "change-me-in-production"
+  ANTHROPIC_API_KEY: ""
+  OPENAI_API_KEY: ""
+  GOOGLE_API_KEY: ""
+  DEEPSEEK_API_KEY: ""
+  OPENROUTER_API_KEY: ""
