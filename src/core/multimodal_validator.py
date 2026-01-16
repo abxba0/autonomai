@@ -121,11 +121,18 @@ class MultiModalValidator:
         self._ocr_reader = None
         self._object_detector = None
         
+        # OCR language configuration (default to English)
+        # Can be overridden via config if needed
+        self.ocr_languages = ['en']
+        if config and hasattr(config, 'ocr_languages'):
+            self.ocr_languages = config.ocr_languages
+        
     def _get_ocr_reader(self):
-        """Lazy load OCR reader"""
+        """Lazy load OCR reader with configured languages"""
         if self._ocr_reader is None and HAS_EASYOCR:
             try:
-                self._ocr_reader = easyocr.Reader(['en'], gpu=False)
+                # Use configured languages for internationalization support
+                self._ocr_reader = easyocr.Reader(self.ocr_languages, gpu=False)
             except Exception as e:
                 python_warnings.warn(f"Failed to initialize OCR reader: {e}")
         return self._ocr_reader

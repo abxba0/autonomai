@@ -11,6 +11,10 @@ from datetime import datetime
 import json
 from pathlib import Path
 
+# Constants for automatic organization
+SIMILARITY_THRESHOLD = 0.3  # Minimum similarity score for parent-child relationship
+ROOT_RULES_FRACTION = 0.33  # Fraction of rules to consider as potential roots (top 1/3)
+
 
 @dataclass
 class RuleNode:
@@ -459,8 +463,11 @@ class RuleGraph:
             sorted_rules = sorted(category_rules, key=lambda r: len(r.rule_text))
             
             # The shortest rules are likely parents (general rules)
-            # Assign them as roots if they don't have parents
-            potential_roots = sorted_rules[:max(1, len(sorted_rules) // 3)]
+            # Consider top ROOT_RULES_FRACTION (1/3) of rules as potential roots
+            # This ratio balances having enough roots for organization
+            # while not making everything a root node
+            potential_roots_count = max(1, int(len(sorted_rules) * ROOT_RULES_FRACTION))
+            potential_roots = sorted_rules[:potential_roots_count]
             
             for root_rule in potential_roots:
                 if not root_rule.parent_id:
@@ -488,7 +495,9 @@ class RuleGraph:
                         rule.rule_text, potential_parent.rule_text
                     )
                     
-                    if similarity > best_similarity and similarity > 0.3:
+                    # Use SIMILARITY_THRESHOLD to ensure meaningful relationships
+                    # 0.3 means at least 30% word overlap, indicating related content
+                    if similarity > best_similarity and similarity > SIMILARITY_THRESHOLD:
                         best_similarity = similarity
                         best_parent = potential_parent
                 

@@ -1,6 +1,7 @@
 # Multi-modal dependencies - vision and audio processing
 Pillow>=10.0.0
-pytesseract>=0.3.10
+# Note: pytesseract is an alternative OCR option, currently using easyocr
+# pytesseract>=0.3.10
 easyocr>=1.7.0
 opencv-python-headless>=4.8.0
 pydub>=0.25.1
