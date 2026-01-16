@@ -214,8 +214,14 @@ class BatchProcessor:
                 if result.successful():
                     result_data = result.get()
                     
-                    # Update job with results
-                    job.status = BatchJobStatus(result_data.get("status", "completed"))
+                    # Map status string to enum, default to COMPLETED if invalid
+                    status_str = result_data.get("status", "completed")
+                    try:
+                        job.status = BatchJobStatus(status_str)
+                    except ValueError:
+                        logger.warning(f"Invalid status '{status_str}' from Celery, defaulting to COMPLETED")
+                        job.status = BatchJobStatus.COMPLETED
+                    
                     job.completed_at = datetime.now()
                     
                     # Add task results

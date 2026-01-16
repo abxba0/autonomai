@@ -71,7 +71,7 @@ def process_single_task(self, task_id: str, task_data: Dict[str, Any], task_type
             workflow_result = system.execute_workflow(
                 goal=task_data.get("goal", ""),
                 context=task_data.get("context"),
-                max_retries=task_data.get("max_retries", 3),
+                max_retries=task_data.get("workflow_max_retries", 3),  # Workflow-specific retries
             )
             result = {
                 "success": workflow_result.get("status") == "completed",
@@ -267,7 +267,8 @@ def cancel_batch_job(self, job_id: str) -> Dict[str, Any]:
     logger.info(f"Cancelling batch job {job_id}")
     
     # Revoke all tasks associated with this job
-    celery_app.control.revoke(job_id, terminate=True, signal="SIGKILL")
+    # Use SIGTERM for graceful shutdown, allowing cleanup
+    celery_app.control.revoke(job_id, terminate=True, signal="SIGTERM")
     
     return {
         "job_id": job_id,

@@ -10,16 +10,24 @@ from typing import Optional, List, Dict, Any
 from pathlib import Path
 import os
 
-# Import batch processing components
-import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
-from src.batch import (
-    BatchProcessor,
-    BatchJob,
-    BatchJobStatus,
-    BatchJobType,
-)
+try:
+    # Try relative import first
+    from ..src.batch import (
+        BatchProcessor,
+        BatchJob,
+        BatchJobStatus,
+        BatchJobType,
+    )
+except ImportError:
+    # Fallback to absolute import for standalone execution
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+    from src.batch import (
+        BatchProcessor,
+        BatchJob,
+        BatchJobStatus,
+        BatchJobType,
+    )
 
 # Create router
 router = APIRouter(prefix="/batch", tags=["batch"])

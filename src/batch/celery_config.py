@@ -23,6 +23,12 @@ celery_app = Celery(
     include=["src.batch.tasks"],
 )
 
+# Task name constants
+TASK_PROCESS_FAILURE_BATCH = "src.batch.tasks.process_failure_batch"
+TASK_PROCESS_WORKFLOW_BATCH = "src.batch.tasks.process_workflow_batch"
+TASK_PROCESS_VALIDATION_BATCH = "src.batch.tasks.process_validation_batch"
+TASK_PROCESS_SINGLE_TASK = "src.batch.tasks.process_single_task"
+
 # Celery configuration
 celery_app.conf.update(
     # Task settings
@@ -54,10 +60,10 @@ celery_app.conf.update(
     
     # Queue configuration
     task_routes={
-        "src.batch.tasks.process_failure_batch": {"queue": "batch_failures"},
-        "src.batch.tasks.process_workflow_batch": {"queue": "batch_workflows"},
-        "src.batch.tasks.process_validation_batch": {"queue": "batch_validations"},
-        "src.batch.tasks.process_single_task": {"queue": "batch_tasks"},
+        TASK_PROCESS_FAILURE_BATCH: {"queue": "batch_failures"},
+        TASK_PROCESS_WORKFLOW_BATCH: {"queue": "batch_workflows"},
+        TASK_PROCESS_VALIDATION_BATCH: {"queue": "batch_validations"},
+        TASK_PROCESS_SINGLE_TASK: {"queue": "batch_tasks"},
     },
     task_default_queue="default",
     task_queues=(
