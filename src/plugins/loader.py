@@ -9,7 +9,13 @@ import logging
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Type
 import json
-import yaml
+
+# YAML is optional - will fall back to JSON if not available
+try:
+    import yaml
+    HAS_YAML = True
+except ImportError:
+    HAS_YAML = False
 
 from .base import BasePlugin, PluginMetadata, PluginConfig
 from .registry import PluginRegistry
@@ -190,6 +196,9 @@ class PluginLoader:
             # Load config
             with open(config_path) as f:
                 if config_path.suffix in [".yaml", ".yml"]:
+                    if not HAS_YAML:
+                        logger.error("YAML support not available. Install with: pip install pyyaml")
+                        return loaded
                     config = yaml.safe_load(f)
                 else:
                     config = json.load(f)

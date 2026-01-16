@@ -5,6 +5,7 @@ Plugin registry for managing loaded plugins.
 from typing import Dict, List, Optional, Type, Callable
 import logging
 from collections import defaultdict
+import threading
 
 from .base import BasePlugin, PluginMetadata, PluginLifecycle
 
@@ -16,7 +17,7 @@ class PluginRegistry:
     Central registry for managing plugins.
     
     Provides registration, lookup, and lifecycle management for all plugins.
-    Thread-safe for concurrent access.
+    Thread-safe for concurrent access via internal locks.
     """
     
     def __init__(self):
@@ -28,6 +29,9 @@ class PluginRegistry:
         
         # Event hooks
         self._hooks: Dict[str, List[Callable]] = defaultdict(list)
+        
+        # Thread safety lock
+        self._lock = threading.RLock()
         
         logger.info("Plugin registry initialized")
     
@@ -41,29 +45,30 @@ class PluginRegistry:
         Returns:
             True if registration successful, False if plugin already exists
         """
-        plugin_name = plugin.metadata.name
-        
-        if plugin_name in self._plugins:
-            logger.warning(f"Plugin {plugin_name} already registered")
-            return False
-        
-        # Validate configuration
-        is_valid, error = plugin.validate_config()
-        if not is_valid:
-            logger.error(f"Plugin {plugin_name} configuration invalid: {error}")
-            plugin.set_error(f"Configuration validation failed: {error}")
-            return False
-        
-        # Register plugin
-        self._plugins[plugin_name] = plugin
-        self._plugins_by_type[plugin.metadata.plugin_type].append(plugin)
-        
-        plugin.lifecycle_state = PluginLifecycle.LOADED
-        
-        logger.info(f"Registered plugin: {plugin_name} ({plugin.metadata.plugin_type})")
-        self._trigger_hook("plugin_registered", plugin)
-        
-        return True
+        with self._lock:
+            plugin_name = plugin.metadata.name
+            
+            if plugin_name in self._plugins:
+                logger.warning(f"Plugin {plugin_name} already registered")
+                return False
+            
+            # Validate configuration
+            is_valid, error = plugin.validate_config()
+            if not is_valid:
+                logger.error(f"Plugin {plugin_name} configuration invalid: {error}")
+                plugin.set_error(f"Configuration validation failed: {error}")
+                return False
+            
+            # Register plugin
+            self._plugins[plugin_name] = plugin
+            self._plugins_by_type[plugin.metadata.plugin_type].append(plugin)
+            
+            plugin.lifecycle_state = PluginLifecycle.LOADED
+            
+            logger.info(f"Registered plugin: {plugin_name} ({plugin.metadata.plugin_type})")
+            self._trigger_hook("plugin_registered", plugin)
+            
+            return True
     
     def unregister(self, plugin_name: str) -> bool:
         """
@@ -75,32 +80,34 @@ class PluginRegistry:
         Returns:
             True if unregistered, False if not found
         """
-        plugin = self._plugins.get(plugin_name)
-        if not plugin:
-            logger.warning(f"Cannot unregister unknown plugin: {plugin_name}")
-            return False
-        
-        # Clean up plugin
-        plugin.lifecycle_state = PluginLifecycle.UNLOADING
-        try:
-            plugin.cleanup()
-        except Exception as e:
-            logger.error(f"Error cleaning up plugin {plugin_name}: {e}")
-        
-        # Remove from registries
-        del self._plugins[plugin_name]
-        self._plugins_by_type[plugin.metadata.plugin_type].remove(plugin)
-        
-        plugin.lifecycle_state = PluginLifecycle.UNLOADED
-        
-        logger.info(f"Unregistered plugin: {plugin_name}")
-        self._trigger_hook("plugin_unregistered", plugin)
-        
-        return True
+        with self._lock:
+            plugin = self._plugins.get(plugin_name)
+            if not plugin:
+                logger.warning(f"Cannot unregister unknown plugin: {plugin_name}")
+                return False
+            
+            # Clean up plugin
+            plugin.lifecycle_state = PluginLifecycle.UNLOADING
+            try:
+                plugin.cleanup()
+            except Exception as e:
+                logger.error(f"Error cleaning up plugin {plugin_name}: {e}")
+            
+            # Remove from registries
+            del self._plugins[plugin_name]
+            self._plugins_by_type[plugin.metadata.plugin_type].remove(plugin)
+            
+            plugin.lifecycle_state = PluginLifecycle.UNLOADED
+            
+            logger.info(f"Unregistered plugin: {plugin_name}")
+            self._trigger_hook("plugin_unregistered", plugin)
+            
+            return True
     
     def get(self, plugin_name: str) -> Optional[BasePlugin]:
-        """Get a plugin by name"""
-        return self._plugins.get(plugin_name)
+        """Get a plugin by name (thread-safe)"""
+        with self._lock:
+            return self._plugins.get(plugin_name)
     
     def get_by_type(self, plugin_type: str) -> List[BasePlugin]:
         """
@@ -112,9 +119,10 @@ class PluginRegistry:
         Returns:
             List of plugins, sorted by priority (higher priority first)
         """
-        plugins = self._plugins_by_type.get(plugin_type, [])
-        # Sort by priority (lower number = higher priority)
-        return sorted(plugins, key=lambda p: p.config.priority)
+        with self._lock:
+            plugins = self._plugins_by_type.get(plugin_type, [])
+            # Sort by priority (lower number = higher priority)
+            return sorted(plugins, key=lambda p: p.config.priority)
     
     def get_enabled(self, plugin_type: Optional[str] = None) -> List[BasePlugin]:
         """

@@ -50,7 +50,7 @@ class PatternAnalyzerPlugin(FailureAnalyzerPlugin):
         for failure in failures:
             if hasattr(failure, 'validation_results'):
                 for result in failure.validation_results:
-                    if not result.passed:
+                    if not result.passed and result.error_message:
                         validation_errors.append(result.error_message)
         
         # Count most common error types
