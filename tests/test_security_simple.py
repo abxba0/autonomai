@@ -34,15 +34,15 @@ def test_authentication():
     print("=== Testing Authentication ===")
 
     # Test user authentication
-    user = authenticate_user("admin", "password123")
-    assert user is not None, "Admin authentication failed"
-    assert user.username == "admin", "Wrong user returned"
-    assert user.role == Role.ADMIN, "Wrong role"
+    valid_user = authenticate_user("admin", "password123")
+    assert valid_user is not None, "Admin authentication failed"
+    assert valid_user.username == "admin", "Wrong user returned"
+    assert valid_user.role == Role.ADMIN, "Wrong role"
     print("✓ Admin authentication successful")
 
     # Test invalid credentials
-    user = authenticate_user("admin", "wrongpassword")
-    assert user is None, "Invalid credentials should return None"
+    invalid_user = authenticate_user("admin", "wrongpassword")
+    assert invalid_user is None, "Invalid credentials should return None"
     print("✓ Invalid credentials handled correctly")
 
     # Test token creation and verification
@@ -50,7 +50,7 @@ def test_authentication():
         "sub": "admin",
         "user_id": "admin-001",
         "role": Role.ADMIN.value,
-        "permissions": [p.value for p in user.permissions],
+        "permissions": [p.value for p in valid_user.permissions],
     }
 
     access_token = create_access_token(token_data)

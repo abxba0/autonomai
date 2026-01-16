@@ -21,11 +21,13 @@ class SecurityValidator:
         r"(?i)(update\s+set)",
         r"(?i)(delete\s+from)",
         r"(?i)(drop\s+table)",
+        r"(?i)(select\s+.+\s+from)",
         r"(?i)(--\s*$)",
         r"(?i)(/\*.*\*/)",
         r"(?i)(;\s*--)",
         r"(?i)(or\s+1\s*=\s*1)",
         r"(?i)(and\s+1\s*=\s*1)",
+        r"(?i)(where\s+1\s*=\s*1)",
     ]
 
     XSS_PATTERNS = [
@@ -41,10 +43,15 @@ class SecurityValidator:
         r"(?i)(;\s*[;&])",
         r"(?i)(`.*`)",
         r"(?i)(\$\{.*\})",
-        r"(?i)(\$\(",
+        r"(?i)(\$\()",
         r"(?i)(\|\s*cat)",
         r"(?i)(\|\s*ls)",
         r"(?i)(\|\s*rm)",
+        r"(?i)(;\s*rm)",
+        r"(?i)(;\s*cat)",
+        r"(?i)(;\s*ls)",
+        r"(?i)(&&\s*rm)",
+        r"(?i)(&&\s*cat)",
     ]
 
     @staticmethod

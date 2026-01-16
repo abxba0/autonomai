@@ -124,6 +124,12 @@ class TokenData(BaseModel):
 # Mock user database (in production, use a real database)
 _users_db: Dict[str, User] = {}
 
+# Demo passwords (in production, use proper password hashing)
+_demo_passwords: Dict[str, str] = {
+    "admin": "password123",
+    "api_client": "api_password123",
+}
+
 
 # Initialize with default admin user
 def _initialize_default_users():
@@ -232,8 +238,9 @@ def authenticate_user(username: str, password: str) -> Optional[User]:
     if not user or not user.is_active:
         return None
 
-    # For demo purposes, accept any non-empty password
-    if password:
+    # Verify password against demo passwords
+    expected_password = _demo_passwords.get(username)
+    if expected_password and password == expected_password:
         return user
     return None
 
