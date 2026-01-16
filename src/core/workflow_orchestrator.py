@@ -1356,3 +1356,151 @@ Update the actor instructions to improve execution reliability.
             "step_id": step_id,
             "updates": updates,
         }
+    
+    def execute_workflows_batch(
+        self,
+        workflows: List[Dict[str, Any]],
+        max_parallel: int = 4,
+        max_retries: int = 3,
+    ) -> List[Dict[str, Any]]:
+        """
+        Execute multiple workflows in parallel (batch processing)
+        
+        This enables workflow-level batch operations with parallelism.
+        Each workflow is executed independently, and results are collected.
+        
+        Args:
+            workflows: List of workflow specifications, each with 'goal' and optional 'context'
+            max_parallel: Maximum number of workflows to execute in parallel
+            max_retries: Maximum retries per workflow
+            
+        Returns:
+            List of workflow execution results
+        """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        
+        results = []
+        
+        def execute_single_workflow(workflow_spec: Dict[str, Any], index: int) -> Dict[str, Any]:
+            """Execute a single workflow with error handling"""
+            try:
+                goal = workflow_spec.get("goal", "")
+                context = workflow_spec.get("context")
+                
+                result = self.execute_workflow(
+                    goal=goal,
+                    context=context,
+                    max_retries=max_retries,
+                )
+                
+                return {
+                    "index": index,
+                    "success": result.get("status") == "completed",
+                    "result": result,
+                    "error": None,
+                }
+            except Exception as e:
+                return {
+                    "index": index,
+                    "success": False,
+                    "result": None,
+                    "error": str(e),
+                }
+        
+        # Execute workflows in parallel
+        with ThreadPoolExecutor(max_workers=max_parallel) as executor:
+            # Submit all workflows
+            future_to_index = {
+                executor.submit(execute_single_workflow, wf, i): i
+                for i, wf in enumerate(workflows)
+            }
+            
+            # Collect results as they complete
+            for future in as_completed(future_to_index):
+                try:
+                    result = future.result()
+                    results.append(result)
+                except Exception as e:
+                    index = future_to_index[future]
+                    results.append({
+                        "index": index,
+                        "success": False,
+                        "result": None,
+                        "error": str(e),
+                    })
+        
+        # Sort by original index
+        results.sort(key=lambda x: x["index"])
+        
+        return results
+    
+    def execute_workflows_with_shared_context(
+        self,
+        workflows: List[Dict[str, Any]],
+        shared_context: Optional[Dict[str, Any]] = None,
+        max_parallel: int = 4,
+        max_retries: int = 3,
+    ) -> Dict[str, Any]:
+        """
+        Execute multiple workflows with a shared context
+        
+        Useful for batch operations that need to share data or state.
+        Results from earlier workflows can inform later ones.
+        
+        Args:
+            workflows: List of workflow specifications
+            shared_context: Context shared across all workflows
+            max_parallel: Maximum parallel workflows
+            max_retries: Maximum retries per workflow
+            
+        Returns:
+            Dict with batch execution results and shared context updates
+        """
+        shared_context = shared_context or {}
+        results = []
+        
+        for i, workflow_spec in enumerate(workflows):
+            goal = workflow_spec.get("goal", "")
+            workflow_context = workflow_spec.get("context", {})
+            
+            # Merge shared context with workflow-specific context
+            merged_context = {**shared_context, **workflow_context}
+            
+            try:
+                result = self.execute_workflow(
+                    goal=goal,
+                    context=merged_context,
+                    max_retries=max_retries,
+                )
+                
+                # Update shared context with workflow outputs
+                if result.get("status") == "completed":
+                    workflow_outputs = {}
+                    for step_result in result.get("results", []):
+                        if step_result.get("outputs"):
+                            workflow_outputs.update(step_result["outputs"])
+                    
+                    shared_context[f"workflow_{i}_outputs"] = workflow_outputs
+                
+                results.append({
+                    "index": i,
+                    "success": result.get("status") == "completed",
+                    "result": result,
+                    "error": None,
+                })
+                
+            except Exception as e:
+                results.append({
+                    "index": i,
+                    "success": False,
+                    "result": None,
+                    "error": str(e),
+                })
+        
+        return {
+            "results": results,
+            "shared_context": shared_context,
+            "total": len(workflows),
+            "successful": sum(1 for r in results if r["success"]),
+            "failed": sum(1 for r in results if not r["success"]),
+        }
