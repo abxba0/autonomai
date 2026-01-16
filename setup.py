@@ -20,6 +20,7 @@ def read_requirements(filename):
 base_requirements = read_requirements("base.txt")
 web_requirements = read_requirements("web.txt")
 local_requirements = read_requirements("local.txt")
+multimodal_requirements = read_requirements("multimodal.txt")
 
 setup(
     name="self_optimizing_system",
@@ -31,7 +32,8 @@ setup(
     extras_require={
         "web": web_requirements,
         "local": local_requirements,
-        "all": web_requirements + local_requirements,
+        "multimodal": multimodal_requirements,
+        "all": web_requirements + local_requirements + multimodal_requirements,
     },
     python_requires=">=3.8",
     classifiers=[
