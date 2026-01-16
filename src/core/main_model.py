@@ -1,6 +1,7 @@
 from typing import Optional, Dict, Any, List
 import os
 from dotenv import load_dotenv
+import logging
 
 # LangChain imports are optional - will be imported only if needed
 # from langchain_anthropic import ChatAnthropic
@@ -11,6 +12,19 @@ from ..models.config import SystemConfig, FailureEntry
 from .instruction_manager import InstructionManager
 from .validator import ValidationPipeline
 from .correction_detector import CorrectionDetector
+
+# Cache imports
+try:
+    from ..cache import CacheManager, CacheConfig, CacheStrategy, LLMResponseCache
+    CACHE_AVAILABLE = True
+except ImportError:
+    CACHE_AVAILABLE = False
+    CacheManager = None
+    CacheConfig = None
+    CacheStrategy = None
+    LLMResponseCache = None
+
+logger = logging.getLogger(__name__)
 
 
 class MainModel:
@@ -39,8 +53,49 @@ class MainModel:
         # Load environment variables
         load_dotenv()
 
+        # Initialize cache if enabled
+        self.cache_manager = None
+        self.llm_cache = None
+        if config.enable_caching and config.cache_llm_responses:
+            self._initialize_cache()
+
         # Initialize model with LangChain
         self.model = self._initialize_model()
+
+    def _initialize_cache(self):
+        """Initialize cache manager and LLM response cache"""
+        if not CACHE_AVAILABLE:
+            logger.warning("Cache module not available. Caching disabled.")
+            return
+
+        try:
+            # Create cache config from system config
+            cache_config = CacheConfig(
+                enabled=self.config.enable_caching,
+                redis_url=self.config.cache_redis_url,
+                redis_db=self.config.cache_redis_db,
+                redis_password=self.config.cache_redis_password,
+                default_ttl=self.config.cache_default_ttl,
+                max_memory_mb=self.config.cache_max_memory_mb,
+                strategy=CacheStrategy(self.config.cache_strategy),
+            )
+
+            # Initialize cache manager
+            self.cache_manager = CacheManager(cache_config)
+
+            # Initialize LLM response cache
+            self.llm_cache = LLMResponseCache(
+                cache_manager=self.cache_manager,
+                include_context_in_key=self.config.cache_include_context_in_key,
+            )
+
+            logger.info("Cache initialized successfully")
+
+        except Exception as e:
+            logger.error(f"Failed to initialize cache: {e}")
+            logger.warning("Proceeding without caching")
+            self.cache_manager = None
+            self.llm_cache = None
 
     def _initialize_model(self):
         """Initialize the language model with LangChain"""
@@ -214,10 +269,34 @@ class MainModel:
                 - validation_passed: bool
                 - validation_results: List
                 - failure_entry: Optional[FailureEntry]
+                - cache_hit: bool (if caching enabled)
         """
 
         # Get current instructions
         system_instructions = self.instruction_manager.get_full_instructions()
+
+        # Try to get cached response if caching is enabled
+        cache_hit = False
+        if self.llm_cache:
+            try:
+                cached_response = self.llm_cache.get_cached_response(
+                    user_query=user_query,
+                    system_instructions=system_instructions,
+                    model_name=self.config.main_model,
+                    temperature=self.config.temperature_main,
+                    conversation_context=conversation_context,
+                )
+
+                if cached_response is not None:
+                    cache_hit = True
+                    logger.info("Cache HIT - returning cached response")
+                    # Add cache_hit flag to response
+                    cached_response["cache_hit"] = True
+                    return cached_response
+
+            except Exception as e:
+                logger.error(f"Error checking cache: {e}")
+                # Continue with normal execution
 
         # Build LangChain messages
         try:
@@ -325,6 +404,27 @@ class MainModel:
         # Store current response for next correction detection
         self.last_response = output
 
+        # Cache the response if caching is enabled
+        if self.llm_cache and not cache_hit:
+            try:
+                response_to_cache = {
+                    "output": output,
+                    "validation_passed": validation_passed,
+                    "validation_results": validation_results,
+                    "failure_entry": failure_entry,
+                    "cache_hit": False,
+                }
+                self.llm_cache.cache_response(
+                    user_query=user_query,
+                    system_instructions=system_instructions,
+                    model_name=self.config.main_model,
+                    temperature=self.config.temperature_main,
+                    response=response_to_cache,
+                    conversation_context=conversation_context,
+                )
+            except Exception as e:
+                logger.error(f"Error caching response: {e}")
+
         # Phase 3: Add successful interactions to golden dataset
         if (
             validation_passed
@@ -359,6 +459,7 @@ class MainModel:
             "failure_entry": failure_entry,
             "correction_detected": correction_detected,
             "correction_confidence": correction_confidence,
+            "cache_hit": cache_hit,
         }
 
     def _create_validation_failure(

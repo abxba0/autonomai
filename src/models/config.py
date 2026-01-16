@@ -110,6 +110,18 @@ class SystemConfig:
     default_tenant_id: str = "default"
     tenant_isolation_strict: bool = True  # Strict isolation vs. shared base rules
 
+    # Caching & Performance Layer (Production)
+    enable_caching: bool = True
+    cache_redis_url: str = "redis://localhost:6379"
+    cache_redis_db: int = 0
+    cache_redis_password: Optional[str] = None
+    cache_default_ttl: int = 3600  # 1 hour default TTL in seconds
+    cache_strategy: str = "ttl"  # ttl, lru, lfu, manual
+    cache_llm_responses: bool = True
+    cache_embeddings: bool = True
+    cache_include_context_in_key: bool = False  # Include conversation context in cache key
+    cache_max_memory_mb: int = 512
+
 
 @dataclass
 class OptimizationAttempt:
