@@ -120,11 +120,14 @@ def main():
     
     print(f"\nTotal: {passed} passed, {failed} failed")
     
-    if passed >= 1:
-        print("\n✅ Basic distributed features working!")
+    if failed > 0:
+        print("\n⚠️  Some checks failed. Please review configuration.")
+        sys.exit(1)
+    elif passed == 2:
+        print("\n✅ All checks passed! System ready for distributed deployment!")
         sys.exit(0)
     else:
-        print("\n⚠️  Checks failed. Please review configuration.")
+        print("\n⚠️  Not all checks completed successfully.")
         sys.exit(1)
 
 

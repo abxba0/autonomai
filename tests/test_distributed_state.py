@@ -268,12 +268,12 @@ class TestDistributedStateManager:
         manager = DistributedStateManager(config)
         
         # Should fallback to single instance mode
-        if REDIS_AVAILABLE:
-            assert not manager.use_redis
+        # Even if Redis is available as a package, connection should fail
+        assert not manager.use_redis
         
         # Locks should still work (as no-ops)
         lock = manager.get_lock("test_resource")
-        assert lock.fallback or not manager.use_redis
+        assert lock.fallback
         
         acquired = lock.acquire()
         assert acquired

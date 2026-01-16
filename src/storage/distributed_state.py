@@ -253,11 +253,12 @@ class DistributedStateManager:
         Context manager for distributed locking.
         
         Usage:
-            with state_manager.lock("my_resource"):
+            with state_manager.lock("my_resource", timeout=60):
                 # Critical section
                 pass
         """
-        lock = self.get_lock(resource, timeout)
+        lock_timeout = timeout or self.config.lock_timeout
+        lock = self.get_lock(resource, lock_timeout)
         acquired = lock.acquire(blocking=blocking, timeout=self.config.lock_blocking_timeout)
         
         if not acquired:

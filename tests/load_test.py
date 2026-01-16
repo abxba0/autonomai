@@ -211,14 +211,8 @@ class LoadTester:
         print("\n" + "=" * 60)
 
 
-async def run_basic_load_test():
+async def run_basic_load_test(config: LoadTestConfig):
     """Run basic load test"""
-    config = LoadTestConfig(
-        base_url="http://localhost",
-        num_concurrent_requests=10,
-        num_iterations=5
-    )
-    
     tester = LoadTester(config)
     
     print("Starting Basic Load Test...")
@@ -236,14 +230,8 @@ async def run_basic_load_test():
     tester.print_summary()
 
 
-async def run_stress_test():
+async def run_stress_test(config: LoadTestConfig):
     """Run stress test with higher concurrency"""
-    config = LoadTestConfig(
-        base_url="http://localhost",
-        num_concurrent_requests=50,
-        num_iterations=10
-    )
-    
     tester = LoadTester(config)
     
     print("Starting Stress Test...")
@@ -270,13 +258,8 @@ async def run_stress_test():
     tester.print_summary()
 
 
-async def run_distributed_state_test():
+async def run_distributed_state_test(config: LoadTestConfig):
     """Test distributed state management under load"""
-    config = LoadTestConfig(
-        base_url="http://localhost",
-        num_concurrent_requests=20
-    )
-    
     tester = LoadTester(config)
     
     print("Starting Distributed State Test...")
@@ -316,19 +299,27 @@ def main():
     
     args = parser.parse_args()
     
-    # Update config from args
-    LoadTestConfig.base_url = args.url
-    LoadTestConfig.num_concurrent_requests = args.concurrent
-    LoadTestConfig.num_iterations = args.iterations
+    # Create config with command line arguments
+    config = LoadTestConfig(
+        base_url=args.url,
+        num_concurrent_requests=args.concurrent,
+        num_iterations=args.iterations
+    )
     
     if args.test == "basic" or args.test == "all":
-        asyncio.run(run_basic_load_test())
+        asyncio.run(run_basic_load_test(config))
     
     if args.test == "stress" or args.test == "all":
-        asyncio.run(run_stress_test())
+        # Use higher concurrency for stress test
+        stress_config = LoadTestConfig(
+            base_url=args.url,
+            num_concurrent_requests=max(args.concurrent, 50),
+            num_iterations=max(args.iterations, 10)
+        )
+        asyncio.run(run_stress_test(stress_config))
     
     if args.test == "distributed" or args.test == "all":
-        asyncio.run(run_distributed_state_test())
+        asyncio.run(run_distributed_state_test(config))
 
 
 if __name__ == "__main__":
