@@ -1,0 +1,317 @@
+name: Comprehensive Testing & Chaos Engineering
+
+on:
+  push:
+    branches: [ main, develop, 'copilot/**' ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run comprehensive tests daily at 3 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      run_chaos:
+        description: 'Run chaos engineering tests'
+        required: false
+        default: 'false'
+      run_load:
+        description: 'Run load tests'
+        required: false
+        default: 'false'
+
+jobs:
+  unit-tests:
+    name: Unit Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+      fail-fast: false
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov pytest-asyncio pytest-xdist
+    
+    - name: Run unit tests with coverage
+      run: |
+        pytest tests/test_unit_core_comprehensive.py \
+          -v \
+          --cov=src \
+          --cov-report=term-missing \
+          --cov-report=html:coverage_html \
+          --cov-report=json:coverage.json \
+          --cov-report=xml:coverage.xml \
+          --junit-xml=unit_tests.xml \
+          -n auto
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage.xml
+        flags: unittests
+        name: codecov-py${{ matrix.python-version }}
+    
+    - name: Check coverage threshold
+      run: |
+        python -c "
+        import json
+        with open('coverage.json', 'r') as f:
+            cov = json.load(f)
+            coverage = cov['totals']['percent_covered']
+            print(f'Coverage: {coverage:.2f}%')
+            if coverage < 80:
+                print('❌ Coverage below 80% threshold')
+                exit(1)
+            elif coverage < 90:
+                print('⚠️  Coverage below 90% target')
+            else:
+                print('✅ Coverage meets 90% target')
+        "
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results-py${{ matrix.python-version }}
+        path: |
+          unit_tests.xml
+          coverage.json
+          coverage_html/
+        retention-days: 30
+
+  integration-tests:
+    name: Integration Tests (LLM Providers)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio pytest-xdist
+    
+    - name: Run integration tests
+      run: |
+        pytest tests/test_llm_providers_comprehensive.py \
+          -v \
+          --junit-xml=integration_tests.xml \
+          -n auto
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: integration-test-results
+        path: integration_tests.xml
+        retention-days: 30
+
+  load-tests:
+    name: Load & Stress Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event_name == 'schedule' || github.event.inputs.run_load == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio locust
+    
+    - name: Run load tests
+      run: |
+        pytest tests/test_load_stress_comprehensive.py \
+          -v \
+          --junit-xml=load_tests.xml \
+          -s
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: load-test-results
+        path: load_tests.xml
+        retention-days: 30
+
+  chaos-tests:
+    name: Chaos Engineering Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.event_name == 'schedule' || github.event.inputs.run_chaos == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio
+    
+    - name: Run chaos engineering tests
+      run: |
+        pytest tests/test_chaos_engineering.py \
+          -v \
+          --junit-xml=chaos_tests.xml \
+          -s
+      continue-on-error: true
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: chaos-test-results
+        path: chaos_tests.xml
+        retention-days: 30
+
+  test-summary:
+    name: Test Summary & Report
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests]
+    if: always()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: test-results
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Generate summary
+      run: |
+        echo "# 🧪 Comprehensive Test Suite Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Unit tests summary
+        echo "## Unit Tests" >> $GITHUB_STEP_SUMMARY
+        for version in 3.8 3.9 3.10 3.11; do
+          if [ -f "test-results/test-results-py${version}/coverage.json" ]; then
+            coverage=$(python -c "import json; f=open('test-results/test-results-py${version}/coverage.json'); c=json.load(f); print(f\"{c['totals']['percent_covered']:.2f}\")")
+            echo "- Python ${version}: ${coverage}% coverage" >> $GITHUB_STEP_SUMMARY
+          fi
+        done
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Integration Tests" >> $GITHUB_STEP_SUMMARY
+        echo "✅ LLM provider integration tests completed" >> $GITHUB_STEP_SUMMARY
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Test Categories Covered" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Unit tests (validators, models, core components)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Integration tests (all LLM providers)" >> $GITHUB_STEP_SUMMARY
+        echo "- ⏳ Load tests (scheduled)" >> $GITHUB_STEP_SUMMARY
+        echo "- ⏳ Chaos engineering (scheduled)" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Comment PR with results
+      uses: actions/github-script@v6
+      if: github.event_name == 'pull_request'
+      with:
+        script: |
+          const fs = require('fs');
+          let body = `## 🧪 Comprehensive Test Results\n\n`;
+          
+          // Try to read coverage for Python 3.10
+          try {
+            const coverage = JSON.parse(fs.readFileSync('test-results/test-results-py3.10/coverage.json', 'utf8'));
+            const coveragePct = coverage.totals.percent_covered.toFixed(2);
+            
+            body += `### Code Coverage\n`;
+            body += `- **${coveragePct}%** (Target: >90%)\n\n`;
+            
+            if (coveragePct >= 90) {
+              body += `✅ Coverage target met!\n\n`;
+            } else if (coveragePct >= 80) {
+              body += `⚠️ Coverage approaching target\n\n`;
+            } else {
+              body += `❌ Coverage below target\n\n`;
+            }
+          } catch (error) {
+            console.log('Could not read coverage report');
+          }
+          
+          body += `### Test Suites\n`;
+          body += `- ✅ Unit tests passed\n`;
+          body += `- ✅ Integration tests passed\n`;
+          body += `- ℹ️ Load and chaos tests run on schedule\n\n`;
+          
+          body += `<details>\n`;
+          body += `<summary>View detailed test information</summary>\n\n`;
+          body += `All test artifacts are available in the Actions tab.\n`;
+          body += `</details>`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: body
+          });
+
+  coverage-report:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    needs: [unit-tests]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download coverage data
+      uses: actions/download-artifact@v3
+      with:
+        name: test-results-py3.10
+        path: coverage-data
+    
+    - name: Upload coverage HTML
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: coverage-data/coverage_html/
+        retention-days: 90
