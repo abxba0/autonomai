@@ -174,23 +174,7 @@ echo -e "\n${BLUE}=== Test Summary ===${NC}"
 
 if [ "$COVERAGE" = true ] && [ -f "tests/reports/coverage.json" ]; then
     echo ""
-    python3 -c "
-import json
-try:
-    with open('tests/reports/coverage.json', 'r') as f:
-        cov = json.load(f)
-        total_coverage = cov['totals']['percent_covered']
-        print(f'📊 Code Coverage: {total_coverage:.2f}%')
-        
-        if total_coverage >= 90:
-            print('✅ Coverage target met (>90%)')
-        elif total_coverage >= 80:
-            print('⚠️  Coverage approaching target (80-90%)')
-        else:
-            print('❌ Coverage below target (<80%)')
-except Exception as e:
-    print(f'Could not read coverage report: {e}')
-"
+    python3 tests/display_coverage.py tests/reports/coverage.json
 fi
 
 echo ""

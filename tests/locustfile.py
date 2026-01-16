@@ -19,6 +19,12 @@ import random
 import time
 
 
+# Priority levels - should match API constants
+PRIORITY_LOW = "low"
+PRIORITY_NORMAL = "normal"
+PRIORITY_HIGH = "high"
+
+
 class TenantUser(HttpUser):
     """Simulates a tenant user accessing the system"""
 
@@ -87,7 +93,7 @@ class TenantUser(HttpUser):
 
         payload = {
             "items": batch_items,
-            "priority": random.choice(["low", "normal", "high"]),
+            "priority": random.choice([PRIORITY_LOW, PRIORITY_NORMAL, PRIORITY_HIGH]),
         }
 
         with self.client.post(
@@ -117,7 +123,10 @@ class BatchProcessingUser(HttpUser):
             {"query": f"Process item {i}", "item_id": i} for i in range(50)
         ]
 
-        payload = {"items": batch_items, "priority": "normal"}
+        payload = {
+            "items": batch_items,
+            "priority": PRIORITY_NORMAL,
+        }
 
         with self.client.post(
             "/v2/batch", json=payload, headers=headers, catch_response=True

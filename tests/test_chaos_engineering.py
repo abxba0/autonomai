@@ -221,12 +221,14 @@ class TestResourceExhaustion:
         """Test behavior when disk space is exhausted"""
         temp_dir = tempfile.mkdtemp()
 
-        # Try to fill disk (safely)
+        # Try to fill disk (safely with smaller test file)
+        # Use 10MB instead of 100MB to avoid CI environment issues
+        TEST_FILE_SIZE_MB = 10
         try:
             large_file = os.path.join(temp_dir, "large_file.dat")
             with open(large_file, "wb") as f:
-                # Write 100MB
-                f.write(b"0" * (100 * 1024 * 1024))
+                # Write TEST_FILE_SIZE_MB
+                f.write(b"0" * (TEST_FILE_SIZE_MB * 1024 * 1024))
         except OSError:
             # Expected when disk is full
             pass

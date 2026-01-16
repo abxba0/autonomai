@@ -97,6 +97,8 @@ class TestBatchProcessingLoad:
     def test_large_batch_processing(self):
         """Test processing large batches"""
         batch_size = 100
+        # Maximum acceptable processing time for batch
+        MAX_BATCH_PROCESSING_TIME = 60  # seconds
         config = SystemConfig(main_model="gpt-4")
         temp_dir = tempfile.mkdtemp()
         inst_mgr = InstructionManager(SystemConfig(instructions_dir=Path(temp_dir)))
@@ -112,7 +114,7 @@ class TestBatchProcessingLoad:
 
         assert len(results) == batch_size
         # Should complete in reasonable time
-        assert processing_time < 60  # 60 seconds for 100 items
+        assert processing_time < MAX_BATCH_PROCESSING_TIME
 
     def test_concurrent_batch_submissions(self):
         """Test multiple batches submitted concurrently"""
