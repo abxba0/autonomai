@@ -16,6 +16,7 @@ from ..models.workflow import (
     WorkflowStep,
     WorkflowFailure,
     StepStatus,
+    StepType,
     FailureSource,
 )
 from .main_model import MainModel
@@ -568,6 +569,339 @@ Expected format:
                 "error": str(e),
             }
 
+    def _evaluate_condition(
+        self, condition: str, context: Dict[str, Any]
+    ) -> bool:
+        """
+        Evaluate a condition expression in the given context
+        
+        Args:
+            condition: Condition expression to evaluate
+            context: Context with variables and step outputs
+            
+        Returns:
+            Boolean result of condition evaluation
+        """
+        try:
+            # Create safe evaluation environment with context variables
+            safe_dict = {
+                "__builtins__": {},
+                "true": True,
+                "false": False,
+                "True": True,
+                "False": False,
+                "None": None,
+            }
+            safe_dict.update(context)
+            
+            # Evaluate the condition
+            result = eval(condition, safe_dict)
+            return bool(result)
+        except Exception as e:
+            print(f"Warning: Failed to evaluate condition '{condition}': {e}")
+            return False
+
+    def execute_conditional_step(
+        self, workflow_id: str, step_id: str, context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Execute a conditional step (if/else or switch/case)
+        
+        Args:
+            workflow_id: ID of the workflow
+            step_id: ID of the conditional step
+            context: Execution context with variables
+            
+        Returns:
+            Dict with execution results
+        """
+        workflow = self.active_workflows.get(workflow_id)
+        if not workflow:
+            return {
+                "success": False,
+                "error": f"Workflow {workflow_id} not found",
+            }
+
+        step = workflow.get_step_by_id(step_id)
+        if not step:
+            return {
+                "success": False,
+                "error": f"Step {step_id} not found in workflow",
+            }
+
+        step.status = StepStatus.RUNNING
+        step.started_at = datetime.now()
+        
+        ctx = context or {}
+        
+        # Evaluate condition
+        condition_result = self._evaluate_condition(step.condition, ctx)
+        
+        # Determine which branch to take
+        branch_key = "true" if condition_result else "false"
+        branch_steps = step.branches.get(branch_key, [])
+        
+        # Mark non-taken branch steps as skipped
+        other_branch_key = "false" if condition_result else "true"
+        other_branch_steps = step.branches.get(other_branch_key, [])
+        for other_step_id in other_branch_steps:
+            other_step = workflow.get_step_by_id(other_step_id)
+            if other_step and other_step.status == StepStatus.PENDING:
+                other_step.status = StepStatus.SKIPPED
+        
+        # Mark this conditional step as completed
+        step.status = StepStatus.COMPLETED
+        step.completed_at = datetime.now()
+        step.outputs = {
+            "condition_result": condition_result,
+            "branch_taken": branch_key,
+            "branch_steps": branch_steps,
+        }
+        
+        return {
+            "success": True,
+            "step_id": step_id,
+            "status": "completed",
+            "outputs": step.outputs,
+        }
+
+    def execute_loop_step(
+        self, workflow_id: str, step_id: str, context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Execute a loop step (while, for, foreach)
+        
+        Args:
+            workflow_id: ID of the workflow
+            step_id: ID of the loop step
+            context: Execution context with variables
+            
+        Returns:
+            Dict with execution results
+        """
+        workflow = self.active_workflows.get(workflow_id)
+        if not workflow:
+            return {
+                "success": False,
+                "error": f"Workflow {workflow_id} not found",
+            }
+
+        step = workflow.get_step_by_id(step_id)
+        if not step:
+            return {
+                "success": False,
+                "error": f"Step {step_id} not found in workflow",
+            }
+
+        step.status = StepStatus.RUNNING
+        step.started_at = datetime.now()
+        
+        ctx = context or {}
+        iterations_performed = []
+        
+        try:
+            if step.loop_type == "foreach":
+                # Execute for each item in collection
+                collection = step.loop_collection or []
+                for i, item in enumerate(collection):
+                    if step.iteration_count >= step.max_iterations:
+                        break
+                    
+                    # Set loop variable in context
+                    ctx[step.loop_variable] = item
+                    ctx[f"{step.loop_variable}_index"] = i
+                    
+                    step.iteration_count += 1
+                    iterations_performed.append({
+                        "iteration": step.iteration_count,
+                        "value": item,
+                        "index": i,
+                    })
+            
+            elif step.loop_type == "while":
+                # Execute while condition is true
+                while step.iteration_count < step.max_iterations:
+                    if not self._evaluate_condition(step.condition, ctx):
+                        break
+                    
+                    step.iteration_count += 1
+                    iterations_performed.append({
+                        "iteration": step.iteration_count,
+                        "condition_result": True,
+                    })
+            
+            elif step.loop_type == "for":
+                # Execute for a specific range
+                start = step.inputs.get("start", 0)
+                end = step.inputs.get("end", 0)
+                step_val = step.inputs.get("step", 1)
+                
+                for i in range(start, end, step_val):
+                    if step.iteration_count >= step.max_iterations:
+                        break
+                    
+                    ctx[step.loop_variable] = i
+                    step.iteration_count += 1
+                    iterations_performed.append({
+                        "iteration": step.iteration_count,
+                        "value": i,
+                    })
+            
+            step.status = StepStatus.COMPLETED
+            step.completed_at = datetime.now()
+            step.outputs = {
+                "iterations_performed": len(iterations_performed),
+                "iterations": iterations_performed,
+                "loop_type": step.loop_type,
+            }
+            
+            return {
+                "success": True,
+                "step_id": step_id,
+                "status": "completed",
+                "outputs": step.outputs,
+            }
+            
+        except Exception as e:
+            step.status = StepStatus.FAILED
+            step.error_message = str(e)
+            return {
+                "success": False,
+                "step_id": step_id,
+                "status": "failed",
+                "error": str(e),
+            }
+
+    def execute_subworkflow_step(
+        self, workflow_id: str, step_id: str, context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Execute a subworkflow step
+        
+        Args:
+            workflow_id: ID of the parent workflow
+            step_id: ID of the subworkflow step
+            context: Execution context to pass to subworkflow
+            
+        Returns:
+            Dict with execution results
+        """
+        workflow = self.active_workflows.get(workflow_id)
+        if not workflow:
+            return {
+                "success": False,
+                "error": f"Workflow {workflow_id} not found",
+            }
+
+        step = workflow.get_step_by_id(step_id)
+        if not step:
+            return {
+                "success": False,
+                "error": f"Step {step_id} not found in workflow",
+            }
+
+        if not step.subworkflow_plan:
+            return {
+                "success": False,
+                "error": f"No subworkflow plan defined for step {step_id}",
+            }
+
+        step.status = StepStatus.RUNNING
+        step.started_at = datetime.now()
+        
+        # Register subworkflow as active
+        subworkflow = step.subworkflow_plan
+        self.active_workflows[subworkflow.id] = subworkflow
+        
+        try:
+            # Execute subworkflow steps
+            ctx = context or {}
+            subworkflow.started_at = datetime.now()
+            
+            # Simple sequential execution of subworkflow
+            for sub_step in subworkflow.steps:
+                if sub_step.status != StepStatus.PENDING:
+                    continue
+                
+                # Execute based on step type
+                result = self._execute_step_by_type(subworkflow.id, sub_step.id, ctx)
+                
+                if not result["success"]:
+                    step.status = StepStatus.FAILED
+                    step.error_message = f"Subworkflow step failed: {result.get('error')}"
+                    return result
+            
+            subworkflow.completed_at = datetime.now()
+            
+            # Collect subworkflow outputs
+            subworkflow_outputs = {}
+            for sub_step in subworkflow.steps:
+                if sub_step.outputs:
+                    subworkflow_outputs[sub_step.id] = sub_step.outputs
+            
+            step.status = StepStatus.COMPLETED
+            step.completed_at = datetime.now()
+            step.outputs = {
+                "subworkflow_id": subworkflow.id,
+                "subworkflow_status": "completed",
+                "subworkflow_outputs": subworkflow_outputs,
+            }
+            
+            return {
+                "success": True,
+                "step_id": step_id,
+                "status": "completed",
+                "outputs": step.outputs,
+            }
+            
+        except Exception as e:
+            step.status = StepStatus.FAILED
+            step.error_message = str(e)
+            return {
+                "success": False,
+                "step_id": step_id,
+                "status": "failed",
+                "error": str(e),
+            }
+
+    def _execute_step_by_type(
+        self, workflow_id: str, step_id: str, context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Execute a step based on its type
+        
+        Args:
+            workflow_id: ID of the workflow
+            step_id: ID of the step
+            context: Execution context
+            
+        Returns:
+            Dict with execution results
+        """
+        workflow = self.active_workflows.get(workflow_id)
+        if not workflow:
+            return {
+                "success": False,
+                "error": f"Workflow {workflow_id} not found",
+            }
+
+        step = workflow.get_step_by_id(step_id)
+        if not step:
+            return {
+                "success": False,
+                "error": f"Step {step_id} not found",
+            }
+
+        # Route to appropriate execution method based on step type
+        if step.step_type == StepType.CONDITIONAL:
+            return self.execute_conditional_step(workflow_id, step_id, context)
+        elif step.step_type == StepType.LOOP:
+            return self.execute_loop_step(workflow_id, step_id, context)
+        elif step.step_type == StepType.SUBWORKFLOW:
+            return self.execute_subworkflow_step(workflow_id, step_id, context)
+        else:  # StepType.STANDARD
+            return self.execute_step(workflow_id, step_id, step.inputs)
+
     def execute_workflow(
         self,
         goal: str,
@@ -643,8 +977,14 @@ Expected format:
                     break
             else:
                 # Execute ready steps
+                # Build execution context from previous step outputs
+                execution_context = {}
+                for completed_step in workflow.steps:
+                    if completed_step.status == StepStatus.COMPLETED and completed_step.outputs:
+                        execution_context[completed_step.id] = completed_step.outputs
+                
                 for step in ready_steps:
-                    result = self.execute_step(workflow.id, step.id)
+                    result = self._execute_step_by_type(workflow.id, step.id, execution_context)
                     execution_results["results"].append(result)
 
                     if result["success"]:
@@ -853,4 +1193,143 @@ Update the actor instructions to improve execution reliability.
                 }
                 for s in workflow.steps
             ],
+        }
+    
+    def add_step_to_workflow(
+        self, workflow_id: str, step: WorkflowStep, after_step_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Dynamically add a step to an active workflow
+        
+        Args:
+            workflow_id: ID of the workflow
+            step: The step to add
+            after_step_id: ID of step to insert after
+            
+        Returns:
+            Dict with operation result
+        """
+        workflow = self.active_workflows.get(workflow_id)
+        if not workflow:
+            return {
+                "success": False,
+                "error": f"Workflow {workflow_id} not found",
+            }
+        
+        success = workflow.insert_step(step, after_step_id)
+        
+        if success:
+            workflow.execution_log.append({
+                "timestamp": datetime.now().isoformat(),
+                "event": "step_added",
+                "step_id": step.id,
+                "step_name": step.name,
+                "after_step_id": after_step_id,
+            })
+        
+        return {
+            "success": success,
+            "workflow_id": workflow_id,
+            "step_id": step.id,
+        }
+    
+    def remove_step_from_workflow(
+        self, workflow_id: str, step_id: str
+    ) -> Dict[str, Any]:
+        """
+        Dynamically remove a step from an active workflow
+        
+        Args:
+            workflow_id: ID of the workflow
+            step_id: ID of the step to remove
+            
+        Returns:
+            Dict with operation result
+        """
+        workflow = self.active_workflows.get(workflow_id)
+        if not workflow:
+            return {
+                "success": False,
+                "error": f"Workflow {workflow_id} not found",
+            }
+        
+        step = workflow.get_step_by_id(step_id)
+        if not step:
+            return {
+                "success": False,
+                "error": f"Step {step_id} not found",
+            }
+        
+        # Don't allow removal of running or completed steps
+        if step.status in [StepStatus.RUNNING, StepStatus.COMPLETED]:
+            return {
+                "success": False,
+                "error": f"Cannot remove step with status {step.status.value}",
+            }
+        
+        success = workflow.remove_step(step_id)
+        
+        if success:
+            workflow.execution_log.append({
+                "timestamp": datetime.now().isoformat(),
+                "event": "step_removed",
+                "step_id": step_id,
+            })
+        
+        return {
+            "success": success,
+            "workflow_id": workflow_id,
+            "step_id": step_id,
+        }
+    
+    def modify_step_in_workflow(
+        self, workflow_id: str, step_id: str, updates: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Dynamically modify a step in an active workflow
+        
+        Args:
+            workflow_id: ID of the workflow
+            step_id: ID of the step to modify
+            updates: Dictionary of attribute updates
+            
+        Returns:
+            Dict with operation result
+        """
+        workflow = self.active_workflows.get(workflow_id)
+        if not workflow:
+            return {
+                "success": False,
+                "error": f"Workflow {workflow_id} not found",
+            }
+        
+        step = workflow.get_step_by_id(step_id)
+        if not step:
+            return {
+                "success": False,
+                "error": f"Step {step_id} not found",
+            }
+        
+        # Don't allow modification of running or completed steps
+        if step.status in [StepStatus.RUNNING, StepStatus.COMPLETED]:
+            return {
+                "success": False,
+                "error": f"Cannot modify step with status {step.status.value}",
+            }
+        
+        success = workflow.update_step(step_id, updates)
+        
+        if success:
+            workflow.execution_log.append({
+                "timestamp": datetime.now().isoformat(),
+                "event": "step_modified",
+                "step_id": step_id,
+                "updates": updates,
+            })
+        
+        return {
+            "success": success,
+            "workflow_id": workflow_id,
+            "step_id": step_id,
+            "updates": updates,
         }
