@@ -1,4 +1,4 @@
-# Self-Optimizing Instruction Library
+# autonomai⛭
 
 A LangChain-based system that learns from failures and automatically improves its own instructions through a critic-actor architecture. Now with enterprise-grade security features, implicit negative feedback detection, and context-based rule extraction.
 
