@@ -15,7 +15,17 @@ This system implements a self-optimizing AI assistant that:
 
 ## Key Features
 
-### 🚀 Production Caching & Performance Layer (NEW)
+### 🚀 Production-Ready Distributed System (NEW)
+- **Horizontal Scaling**: Deploy across multiple machines/containers
+- **Distributed State Management**: Redis-based cross-instance coordination
+- **Distributed Locks**: Race condition prevention with distributed locking
+- **Load Balancing**: Nginx/Kubernetes ingress support with health checks
+- **Multi-Worker Task Queue**: Celery-based distributed job processing
+- **Auto-Scaling**: Kubernetes HPA for dynamic resource allocation
+- **High Availability**: Fault-tolerant with automatic failover
+- See [docs/distributed-deployment.md](docs/distributed-deployment.md) for details
+
+### 🚀 Production Caching & Performance Layer
 - **LLM Response Caching**: 1000x+ speedup for repeated queries
 - **Embeddings Caching**: Reduce semantic search overhead
 - **Distributed Redis Support**: Scale horizontally with Redis backend
@@ -696,18 +706,94 @@ python web/api_tenant_management.py
 
 See [Multi-Tenant Documentation](docs/MULTI_TENANT.md) for complete details.
 
+## Distributed Deployment ✨ NEW
+
+AutonomAI now supports horizontal scaling across multiple machines/containers for production workloads.
+
+### Quick Start with Docker Compose
+
+```bash
+# 1. Clone and configure
+git clone <repository-url>
+cd autonomai
+cp .env.example .env
+# Edit .env with your API keys
+
+# 2. Start distributed system
+docker-compose up -d
+
+# 3. Verify deployment
+curl http://localhost/health
+
+# 4. View monitoring dashboard
+open http://localhost:5555
+```
+
+This starts:
+- 2 API server instances with load balancing
+- 2 Celery worker instances  
+- Redis for state/cache/queue
+- Nginx load balancer
+- Flower monitoring dashboard
+
+### Kubernetes Deployment
+
+```bash
+# 1. Build and push image
+docker build -t your-registry/autonomai:latest .
+docker push your-registry/autonomai:latest
+
+# 2. Update k8s manifests with your image and secrets
+kubectl apply -f k8s/
+
+# 3. Verify deployment
+kubectl get pods -n autonomai
+```
+
+### Key Features
+
+- **Distributed Locks**: Prevents race conditions across instances
+- **Horizontal Auto-Scaling**: Kubernetes HPA scales based on CPU/memory
+- **Load Balancing**: Nginx/Ingress distributes traffic
+- **High Availability**: Automatic failover and health checks
+- **Multi-Worker Queue**: Celery distributes batch jobs
+- **Shared State**: Redis-based cross-instance coordination
+
+### Configuration
+
+Enable distributed mode via environment variables:
+
+```bash
+export ENABLE_DISTRIBUTED_STATE=true
+export REDIS_STATE_URL=redis://localhost:6379/2
+```
+
+Or in code:
+
+```python
+from src.models.config import SystemConfig
+
+config = SystemConfig(
+    enable_distributed_state=True,
+    redis_state_url="redis://localhost:6379/2",
+)
+```
+
+See [docs/distributed-deployment.md](docs/distributed-deployment.md) for comprehensive deployment guide.
+
 ## Future Enhancements
 
 1. ~~**Multi-tenant Support**: Tenant isolation and data separation~~ ✅ **IMPLEMENTED**
-2. **Advanced Security**: Two-factor authentication, IP whitelisting
-3. **Integration Features**: SSO support, OAuth2/OIDC integration
-4. **Additional Providers**: Support for more AI providers (Cohere, AI21, etc.)
-5. **Embedding Support**: Enhanced semantic similarity for failure analysis
-6. ~~**Database Backend**: Replace file storage with database~~ ✅ **IMPLEMENTED** (optional, file-based still supported)
-7. **Web Interface**: Add dashboard for monitoring and manual review
-8. **Advanced Model Routing**: Automatic model selection based on task type
-9. ~~**Batch Processing**: Optimize multiple failures simultaneously~~ ✅ **IMPLEMENTED**
-10. **Automated Compliance Reporting**: Generate compliance reports for auditors
+2. ~~**Distributed System**: Horizontal scaling and load balancing~~ ✅ **IMPLEMENTED**
+3. **Advanced Security**: Two-factor authentication, IP whitelisting
+4. **Integration Features**: SSO support, OAuth2/OIDC integration
+5. **Additional Providers**: Support for more AI providers (Cohere, AI21, etc.)
+6. **Embedding Support**: Enhanced semantic similarity for failure analysis
+7. ~~**Database Backend**: Replace file storage with database~~ ✅ **IMPLEMENTED** (optional, file-based still supported)
+8. **Web Interface**: Add dashboard for monitoring and manual review
+9. **Advanced Model Routing**: Automatic model selection based on task type
+10. ~~**Batch Processing**: Optimize multiple failures simultaneously~~ ✅ **IMPLEMENTED**
+11. **Automated Compliance Reporting**: Generate compliance reports for auditors
 
 ## Batch Processing & Progress Monitoring ✨ NEW
 

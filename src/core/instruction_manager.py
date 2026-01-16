@@ -1,17 +1,25 @@
 from typing import Optional, List
 from datetime import datetime
+import logging
 
 from ..models.config import SystemConfig, FailureLog, FailureEntry
 from ..models.version import VersionMetadata, InstructionVersion
 from ..storage.markdown_handler import MarkdownHandler
 from ..storage.version_control import VersionController
+from ..storage.distributed_state import DistributedStateManager, DistributedStateConfig
 from .golden_dataset import GoldenDataset
+
+logger = logging.getLogger(__name__)
 
 
 class InstructionManager:
-    """Manages instructions.md file and version control"""
+    """Manages instructions.md file and version control with distributed locking"""
 
-    def __init__(self, config: SystemConfig):
+    def __init__(
+        self, 
+        config: SystemConfig,
+        state_manager: Optional[DistributedStateManager] = None
+    ):
         self.config = config
         self.instructions_path = config.instructions_dir / config.instructions_file
         self.versions_dir = config.instructions_dir / config.versions_dir
@@ -21,6 +29,13 @@ class InstructionManager:
         # Components
         self.md_handler = MarkdownHandler()
         self.version_controller = VersionController(self.versions_dir, config)
+
+        # Distributed state manager for multi-instance coordination
+        self.state_manager = state_manager
+        if self.state_manager is None and hasattr(config, 'enable_distributed_state') and config.enable_distributed_state:
+            # Create state manager if enabled in config
+            state_config = DistributedStateConfig()
+            self.state_manager = DistributedStateManager(state_config)
 
         # Phase 3: Golden Dataset for regression testing
         self.golden_dataset = None
@@ -128,9 +143,20 @@ Latest version: {self.current_version or "initial"}
         return f"{self.base_instructions}\n\n{self.dynamic_appendix}"
 
     def add_failure(self, failure: FailureEntry):
-        """Add a failure to the log"""
-        self.failure_log.add(failure)
-        self._save_to_file()
+        """Add a failure to the log with distributed locking"""
+        if self.state_manager:
+            try:
+                with self.state_manager.lock("failure_log", timeout=10):
+                    self.failure_log.add(failure)
+                    self._save_to_file()
+            except Exception as e:
+                logger.error(f"Error acquiring lock for failure logging: {e}")
+                # Fallback to non-locked add
+                self.failure_log.add(failure)
+                self._save_to_file()
+        else:
+            self.failure_log.add(failure)
+            self._save_to_file()
 
     def get_failure_history(self, limit: int = 50) -> List[FailureEntry]:
         """Get recent failure history"""
@@ -142,7 +168,27 @@ Latest version: {self.current_version or "initial"}
         metadata: VersionMetadata,
         rules_to_deprecate: Optional[List[str]] = None,
     ) -> bool:
-        """Update the dynamic appendix with version control"""
+        """Update the dynamic appendix with version control and distributed locking"""
+
+        # Acquire distributed lock for instruction updates
+        if self.state_manager:
+            try:
+                with self.state_manager.lock("instruction_update", timeout=30):
+                    return self._update_appendix_locked(new_appendix, metadata, rules_to_deprecate)
+            except Exception as e:
+                logger.error(f"Error acquiring lock for instruction update: {e}")
+                # Fallback to non-locked update in case of lock failure
+                return self._update_appendix_locked(new_appendix, metadata, rules_to_deprecate)
+        else:
+            return self._update_appendix_locked(new_appendix, metadata, rules_to_deprecate)
+    
+    def _update_appendix_locked(
+        self,
+        new_appendix: str,
+        metadata: VersionMetadata,
+        rules_to_deprecate: Optional[List[str]] = None,
+    ) -> bool:
+        """Internal method for updating appendix (called within lock)"""
 
         # Update appendix
         old_appendix = self.dynamic_appendix
@@ -170,7 +216,26 @@ Latest version: {self.current_version or "initial"}
         justification: str,
         metadata: Optional[VersionMetadata] = None,
     ) -> bool:
-        """Create a new version snapshot"""
+        """Create a new version snapshot with distributed locking"""
+
+        # Acquire lock for version creation to prevent race conditions
+        if self.state_manager:
+            try:
+                with self.state_manager.lock("version_create", timeout=30):
+                    return self._create_version_locked(trigger_type, justification, metadata)
+            except Exception as e:
+                logger.error(f"Error acquiring lock for version creation: {e}")
+                return self._create_version_locked(trigger_type, justification, metadata)
+        else:
+            return self._create_version_locked(trigger_type, justification, metadata)
+    
+    def _create_version_locked(
+        self,
+        trigger_type: str,
+        justification: str,
+        metadata: Optional[VersionMetadata] = None,
+    ) -> bool:
+        """Internal method for creating version (called within lock)"""
 
         if metadata is None:
             metadata = VersionMetadata(

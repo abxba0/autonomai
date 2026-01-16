@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autonomai-celery-worker
+  namespace: autonomai
+spec:
+  replicas: 2  # Scale workers based on workload
+  selector:
+    matchLabels:
+      app: autonomai-celery-worker
+  template:
+    metadata:
+      labels:
+        app: autonomai-celery-worker
+    spec:
+      containers:
+      - name: celery-worker
+        image: autonomai:latest  # Replace with your image
+        imagePullPolicy: Always
+        env:
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: autonomai-config
+              key: REDIS_URL
+        - name: REDIS_BACKEND
+          value: "redis://autonomai-redis:6379/1"
+        - name: REDIS_STATE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: autonomai-config
+              key: REDIS_STATE_URL
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: autonomai-secrets
+              key: ANTHROPIC_API_KEY
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: autonomai-secrets
+              key: OPENAI_API_KEY
+        - name: GOOGLE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: autonomai-secrets
+              key: GOOGLE_API_KEY
+        command:
+        - celery
+        - -A
+        - src.batch.celery_config
+        - worker
+        - --loglevel=info
+        - --concurrency=4
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: autonomai-celery-worker-hpa
+  namespace: autonomai
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: autonomai-celery-worker
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

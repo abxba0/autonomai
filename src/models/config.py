@@ -110,6 +110,11 @@ class SystemConfig:
     default_tenant_id: str = "default"
     tenant_isolation_strict: bool = True  # Strict isolation vs. shared base rules
 
+    # Distributed System Settings (Production)
+    enable_distributed_state: bool = False
+    redis_state_url: str = "redis://localhost:6379/2"
+    distributed_lock_timeout: int = 30
+
     # Caching & Performance Layer (Production)
     enable_caching: bool = True
     cache_redis_url: str = "redis://localhost:6379"

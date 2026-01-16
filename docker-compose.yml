@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+  # Redis for caching, state management, and task queue
+  redis:
+    image: redis:7-alpine
+    container_name: autonomai-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # Celery worker for batch processing
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: autonomai-celery-worker
+    command: celery -A src.batch.celery_config worker --loglevel=info --concurrency=4
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_BACKEND=redis://redis:6379/1
+      - REDIS_STATE_URL=redis://redis:6379/2
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./instructions:/app/instructions
+      - ./data:/app/data
+    restart: unless-stopped
+    deploy:
+      replicas: 2  # Run 2 workers by default
+
+  # API Server Instance 1
+  api-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: autonomai-api-1
+    command: uvicorn web.api_secure:app --host 0.0.0.0 --port 8000 --workers 2
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_STATE_URL=redis://redis:6379/2
+      - ENABLE_DISTRIBUTED_STATE=true
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./instructions:/app/instructions
+      - ./data:/app/data
+    restart: unless-stopped
+
+  # API Server Instance 2
+  api-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: autonomai-api-2
+    command: uvicorn web.api_secure:app --host 0.0.0.0 --port 8000 --workers 2
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_STATE_URL=redis://redis:6379/2
+      - ENABLE_DISTRIBUTED_STATE=true
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./instructions:/app/instructions
+      - ./data:/app/data
+    restart: unless-stopped
+
+  # Nginx Load Balancer
+  nginx:
+    image: nginx:alpine
+    container_name: autonomai-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api-1
+      - api-2
+    restart: unless-stopped
+
+  # Flower for Celery monitoring (optional)
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: autonomai-flower
+    command: celery -A src.batch.celery_config flower --port=5555
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_BACKEND=redis://redis:6379/1
+    ports:
+      - "5555:5555"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+    driver: local
