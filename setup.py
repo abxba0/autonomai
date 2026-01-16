@@ -36,6 +36,14 @@ setup(
         "all": web_requirements + local_requirements + multimodal_requirements,
     },
     python_requires=">=3.8",
+    # Plugin system entry point
+    entry_points={
+        "autonomai.plugins": [
+            # Example plugins (commented out by default)
+            # "keyword_validator = examples.plugins.keyword_validator_plugin:KeywordValidatorPlugin",
+            # "pattern_analyzer = examples.plugins.failure_analyzer_plugin:PatternAnalyzerPlugin",
+        ],
+    },
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
