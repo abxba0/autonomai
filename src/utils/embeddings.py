@@ -3,6 +3,7 @@ Embeddings module for semantic similarity analysis of failures
 """
 
 from typing import List, Optional, Tuple
+import logging
 
 # Try to import optional dependencies
 try:
@@ -28,6 +29,19 @@ from pathlib import Path
 
 from ..models.config import SystemConfig, FailureEntry
 
+# Cache imports
+try:
+    from ..cache import CacheManager, CacheConfig, CacheStrategy, EmbeddingsCacheWrapper
+    CACHE_AVAILABLE = True
+except ImportError:
+    CACHE_AVAILABLE = False
+    CacheManager = None
+    CacheConfig = None
+    CacheStrategy = None
+    EmbeddingsCacheWrapper = None
+
+logger = logging.getLogger(__name__)
+
 
 class EmbeddingsManager:
     """Manages embeddings for semantic similarity analysis"""
@@ -37,9 +51,14 @@ class EmbeddingsManager:
         self.embeddings_model = None
         self.chroma_client = None
         self.collection = None
+        self.cache_wrapper = None
 
         # Initialize embeddings
         self._initialize_embeddings()
+
+        # Initialize cache if enabled
+        if config.enable_caching and config.cache_embeddings:
+            self._initialize_cache()
 
     def _initialize_embeddings(self):
         """Initialize embeddings model and vector database"""
@@ -85,6 +104,37 @@ class EmbeddingsManager:
             print("Falling back to simple text similarity")
             self.embeddings_model = None
 
+    def _initialize_cache(self):
+        """Initialize cache for embeddings"""
+        if not CACHE_AVAILABLE:
+            logger.warning("Cache module not available. Embeddings caching disabled.")
+            return
+
+        try:
+            # Create cache config from system config
+            cache_config = CacheConfig(
+                enabled=self.config.enable_caching,
+                redis_url=self.config.cache_redis_url,
+                redis_db=self.config.cache_redis_db,
+                redis_password=self.config.cache_redis_password,
+                default_ttl=self.config.cache_default_ttl,
+                max_memory_mb=self.config.cache_max_memory_mb,
+                strategy=CacheStrategy(self.config.cache_strategy),
+            )
+
+            # Initialize cache manager
+            cache_manager = CacheManager(cache_config)
+
+            # Initialize embeddings cache wrapper
+            self.cache_wrapper = EmbeddingsCacheWrapper(cache_manager=cache_manager)
+
+            logger.info("Embeddings cache initialized successfully")
+
+        except Exception as e:
+            logger.error(f"Failed to initialize embeddings cache: {e}")
+            logger.warning("Proceeding without embeddings caching")
+            self.cache_wrapper = None
+
     def get_embedding(self, text: str) -> Optional[List[float]]:
         """Get embedding for a text string"""
         if not self.embeddings_model:
@@ -96,12 +146,31 @@ class EmbeddingsManager:
             if not clean_text:
                 return None
 
-            # Generate embedding
-            embedding = self.embeddings_model.encode(clean_text)
-            return embedding.tolist()
+            # Try to get from cache first
+            if self.cache_wrapper:
+                model_name = os.getenv("EMBEDDINGS_MODEL", "all-MiniLM-L6-v2")
+                embedding = self.cache_wrapper.get_or_compute_embedding(
+                    text=clean_text,
+                    compute_fn=lambda t: self._compute_embedding(t),
+                    model_name=model_name,
+                )
+                return embedding
+            else:
+                # Compute directly if cache not available
+                return self._compute_embedding(clean_text)
 
         except Exception as e:
             print(f"Error generating embedding: {e}")
+            return None
+
+    def _compute_embedding(self, text: str) -> Optional[List[float]]:
+        """Compute embedding without cache"""
+        try:
+            # Generate embedding
+            embedding = self.embeddings_model.encode(text)
+            return embedding.tolist()
+        except Exception as e:
+            logger.error(f"Error computing embedding: {e}")
             return None
 
     def add_failure_embedding(self, failure: FailureEntry):
