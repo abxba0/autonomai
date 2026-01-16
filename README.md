@@ -100,6 +100,9 @@ pip install -e ".[web]"
 # For local AI embeddings (ChromaDB, sentence-transformers)
 pip install -e ".[local]"
 
+# For multi-modal features (vision, audio processing)
+pip install -e ".[multimodal]"
+
 # Install everything
 pip install -e ".[all]"
 ```
@@ -108,6 +111,7 @@ pip install -e ".[all]"
 - **Base**: Core logic, cloud AI providers (Anthropic, OpenAI, Google), SQLAlchemy
 - **Web**: FastAPI, Uvicorn, JWT authentication, Redis, input sanitization
 - **Local**: ChromaDB vector database, sentence-transformers for embeddings
+- **Multimodal**: Pillow, OpenCV, EasyOCR, PyDub, Transformers for vision/audio processing
 
 The system gracefully falls back to simpler alternatives if optional dependencies are missing.
 
