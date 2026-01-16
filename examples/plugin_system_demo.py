@@ -180,13 +180,11 @@ def main():
         
         print("\n   Testing workflow step execution...")
         test_step = WorkflowStep(
-            step_id="demo_step",
-            step_type="data_transform",
+            name="demo_step",
             description="uppercase: Convert to uppercase",
-            inputs={"data": "hello plugin world"},
-            outputs={},
-            dependencies=[],
         )
+        test_step.step_type = "data_transform"
+        test_step.inputs = {"data": "hello plugin world"}
         
         executor = manager.find_workflow_step_executor(test_step)
         if executor:

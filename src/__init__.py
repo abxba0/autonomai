@@ -2,6 +2,7 @@
 Self-Optimizing Instruction Library
 
 A system that learns from failures and automatically improves its own instructions.
+Includes a production-grade plugin system for extensibility.
 """
 
 from typing import Optional, Dict, Any, List
@@ -26,6 +27,19 @@ from .models.workflow import (
     WorkflowFailure,
     StepStatus,
     FailureSource,
+)
+
+# Plugin system
+from .plugins import (
+    PluginManager,
+    BasePlugin,
+    PluginMetadata,
+    PluginConfig,
+    PluginLifecycle,
+    ValidatorPlugin,
+    OptimizerPlugin,
+    FailureAnalyzerPlugin,
+    WorkflowStepPlugin,
 )
 
 
@@ -370,4 +384,14 @@ __all__ = [
     "WorkflowFailure",
     "StepStatus",
     "FailureSource",
+    # Plugin system
+    "PluginManager",
+    "BasePlugin",
+    "PluginMetadata",
+    "PluginConfig",
+    "PluginLifecycle",
+    "ValidatorPlugin",
+    "OptimizerPlugin",
+    "FailureAnalyzerPlugin",
+    "WorkflowStepPlugin",
 ]

@@ -31,7 +31,7 @@ class DataTransformStepPlugin(WorkflowStepPlugin):
     
     def can_execute(self, step: WorkflowStep) -> bool:
         """Check if this plugin can execute the given step"""
-        return step.step_type == "data_transform"
+        return hasattr(step, 'step_type') and step.step_type == "data_transform"
     
     def validate_step(self, step: WorkflowStep) -> tuple[bool, Optional[str]]:
         """Validate that the step has required configuration"""
@@ -127,7 +127,7 @@ class CustomAPIStepPlugin(WorkflowStepPlugin):
     
     def can_execute(self, step: WorkflowStep) -> bool:
         """Check if this plugin can execute the given step"""
-        return step.step_type == "custom_api"
+        return hasattr(step, 'step_type') and step.step_type == "custom_api"
     
     def validate_step(self, step: WorkflowStep) -> tuple[bool, Optional[str]]:
         """Validate API step configuration"""
@@ -217,13 +217,11 @@ if __name__ == "__main__":
     
     # Example: Execute a step
     test_step = WorkflowStep(
-        step_id="step1",
-        step_type="data_transform",
+        name="Demo Step",
         description="uppercase: Transform text to uppercase",
-        inputs={"data": "hello world"},
-        outputs={},
-        dependencies=[],
     )
+    test_step.step_type = "data_transform"
+    test_step.inputs = {"data": "hello plugin world"}
     
     executor = manager.find_workflow_step_executor(test_step)
     if executor:

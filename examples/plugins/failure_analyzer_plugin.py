@@ -10,7 +10,7 @@ from collections import Counter
 import re
 
 from src.plugins import FailureAnalyzerPlugin, PluginMetadata, PluginConfig
-from src.models.failure import FailureEntry
+from src.models.config import FailureEntry
 from src.models.critic_response import CriticResponse
 
 
@@ -87,15 +87,18 @@ class PatternAnalyzerPlugin(FailureAnalyzerPlugin):
             
             # Generate a simple suggestion based on the error
             suggestion = f"Add specific handling for: {most_common_error}"
+            reasoning = f"Pattern detected: {most_common_error} occurred {count} time(s)"
             
             # Create a basic critic response
             # Note: In a real plugin, you'd use an LLM or more sophisticated logic
             return CriticResponse(
-                should_update=True,
-                confidence=0.7,
-                proposed_changes=suggestion,
-                reasoning=f"Pattern detected: {most_common_error} occurred {count} time(s)",
-                affected_sections=["validation"],
+                impact_analysis=f"This change addresses a pattern that occurred {count} times. Impact: Medium",
+                conflict_analysis="No conflicts detected with existing rules",
+                safety_declaration=True,
+                safety_reasoning="Safe to add specific error handling for detected pattern",
+                change_type="error_handling",
+                proposed_appendix_update=f"## Error Handling\n\n{suggestion}\n\nReasoning: {reasoning}",
+                confidence_score=0.7,
             )
         
         return None

@@ -6,7 +6,7 @@ from abc import abstractmethod
 from typing import Optional, Dict, Any, List
 
 from .base import BasePlugin, PluginMetadata, PluginConfig
-from ..models.failure import FailureEntry
+from ..models.config import FailureEntry
 from ..models.critic_response import CriticResponse
 
 

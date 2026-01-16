@@ -19,7 +19,7 @@ from src.plugins import (
     WorkflowStepPlugin,
 )
 from src.core.validator import BaseValidator, ValidationResult
-from src.models.failure import FailureEntry
+from src.models.config import FailureEntry
 from src.models.critic_response import CriticResponse
 from src.models.workflow import WorkflowStep, StepStatus
 
@@ -59,10 +59,13 @@ class MockOptimizerPlugin(OptimizerPlugin):
     
     def analyze_failure(self, failure, current_instructions, context=None):
         return CriticResponse(
-            should_update=True,
-            confidence=0.8,
-            proposed_changes="Test changes",
-            reasoning="Test reasoning",
+            impact_analysis="Test impact analysis with sufficient detail to meet the minimum requirement",
+            conflict_analysis="No conflicts detected in the test",
+            safety_declaration=True,
+            safety_reasoning="Safe for testing purposes only",
+            change_type="test",
+            proposed_appendix_update="Test changes\n- Add test rule",
+            confidence_score=0.8,
         )
 
 
@@ -78,7 +81,7 @@ class MockWorkflowStepPlugin(WorkflowStepPlugin):
         )
     
     def can_execute(self, step):
-        return step.step_type == "mock"
+        return hasattr(step, 'step_type') and step.step_type == "mock"
     
     def execute_step(self, step, context):
         return StepStatus.COMPLETED, {"result": "success"}
@@ -321,9 +324,8 @@ class TestPluginManager:
         
         # Create a mock failure
         failure = FailureEntry(
-            query="test query",
-            output="test output",
-            error_message="test error",
+            trigger_type="auto_validation",
+            failure_description="test error",
         )
         
         optimizer = manager.find_optimizer_for_failure(failure)
@@ -341,13 +343,10 @@ class TestPluginManager:
         
         # Create a mock workflow step
         step = WorkflowStep(
-            step_id="step1",
-            step_type="mock",
+            name="Test step",
             description="Test step",
-            inputs={},
-            outputs={},
-            dependencies=[],
         )
+        step.step_type = "mock"  # Add custom attribute
         
         executor = manager.find_workflow_step_executor(step)
         assert executor is not None
@@ -423,9 +422,8 @@ class TestOptimizerPlugin:
         plugin.initialize()
         
         failure = FailureEntry(
-            query="test",
-            output="output",
-            error_message="error",
+            trigger_type="auto_validation",
+            failure_description="error",
         )
         
         assert plugin.can_handle(failure) is True
@@ -438,14 +436,13 @@ class TestOptimizerPlugin:
         plugin.initialize()
         
         failure = FailureEntry(
-            query="test",
-            output="output",
-            error_message="error",
+            trigger_type="auto_validation",
+            failure_description="error",
         )
         
         response = plugin.analyze_failure(failure, "current instructions")
         assert response is not None
-        assert response.should_update is True
+        assert response.safety_declaration is True
 
 
 class TestWorkflowStepPlugin:
@@ -457,13 +454,10 @@ class TestWorkflowStepPlugin:
         plugin.initialize()
         
         step = WorkflowStep(
-            step_id="step1",
-            step_type="mock",
+            name="Test step",
             description="Test",
-            inputs={},
-            outputs={},
-            dependencies=[],
         )
+        step.step_type = "mock"
         
         assert plugin.can_execute(step) is True
     
@@ -475,13 +469,10 @@ class TestWorkflowStepPlugin:
         plugin.initialize()
         
         step = WorkflowStep(
-            step_id="step1",
-            step_type="mock",
+            name="Test step",
             description="Test",
-            inputs={},
-            outputs={},
-            dependencies=[],
         )
+        step.step_type = "mock"
         
         status, outputs = plugin.execute_step(step, {})
         assert status == StepStatus.COMPLETED
