@@ -73,7 +73,7 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
         
         # If no tenant ID and required, reject request
         if not tenant_id and self.require_tenant:
-            return HTTPException(
+            raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Tenant identification required",
             )
@@ -87,7 +87,7 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
         
         # Validate tenant exists
         if not tenant and tenant_id != self.default_tenant_id:
-            return HTTPException(
+            raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Tenant '{tenant_id}' not found",
             )
@@ -97,7 +97,7 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
         
         # Validate tenant can make requests
         if tenant and not tenant_context.can_make_request():
-            return HTTPException(
+            raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Tenant is {tenant.status.value}",
             )
@@ -106,7 +106,7 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
         if tenant:
             limits_check = self.tenant_manager.check_tenant_limits(tenant_id)
             if not limits_check.get("can_proceed", False):
-                return HTTPException(
+                raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                     detail=f"Tenant limit exceeded: {limits_check.get('exceeded', [])}",
                 )

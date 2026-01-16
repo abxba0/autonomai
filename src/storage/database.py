@@ -39,6 +39,9 @@ load_dotenv()
 # SQLAlchemy base
 Base = declarative_base()
 
+# Constants
+DEFAULT_TENANT_ID = "default"
+
 
 class DBFailureEntry(Base):
     """Database model for FailureEntry"""
@@ -60,7 +63,7 @@ class DBFailureEntry(Base):
     resolution_notes = Column(Text, nullable=True)
     affected_appendix_rules = Column(JSON, default=list)
     failure_signature = Column(String)
-    tenant_id = Column(String, default="default", nullable=False, index=True)
+    tenant_id = Column(String, default=DEFAULT_TENANT_ID, nullable=False, index=True)
 
 
 class DBVersionMetadata(Base):
@@ -80,7 +83,7 @@ class DBVersionMetadata(Base):
     parent_version = Column(String, nullable=True)
     user_approved = Column(Boolean, default=False)
     approval_notes = Column(Text, nullable=True)
-    tenant_id = Column(String, ForeignKey("tenants.tenant_id"), default="default", nullable=False, index=True)
+    tenant_id = Column(String, ForeignKey("tenants.tenant_id"), default=DEFAULT_TENANT_ID, nullable=False, index=True)
 
 
 class DBInstructionVersion(Base):
@@ -92,7 +95,7 @@ class DBInstructionVersion(Base):
     base_instructions = Column(Text)
     dynamic_appendix = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
-    tenant_id = Column(String, ForeignKey("tenants.tenant_id"), default="default", nullable=False, index=True)
+    tenant_id = Column(String, ForeignKey("tenants.tenant_id"), default=DEFAULT_TENANT_ID, nullable=False, index=True)
 
 
 class DBTenant(Base):

@@ -53,7 +53,7 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately in production
+    allow_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8000").split(","),  # Configure in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -67,7 +67,7 @@ security = HTTPBearer()
 class TenantCreate(BaseModel):
     """Request model for creating a tenant"""
     name: str = Field(..., min_length=1, max_length=255)
-    email: str = Field(..., regex=r'^[\w\.-]+@[\w\.-]+\.\w+$')
+    email: str  # Will be validated by Pydantic
     plan: TenantPlan = TenantPlan.FREE
     company: Optional[str] = None
     phone: Optional[str] = None
@@ -78,7 +78,7 @@ class TenantCreate(BaseModel):
 class TenantUpdate(BaseModel):
     """Request model for updating a tenant"""
     name: Optional[str] = Field(None, min_length=1, max_length=255)
-    email: Optional[str] = Field(None, regex=r'^[\w\.-]+@[\w\.-]+\.\w+$')
+    email: Optional[str] = None  # Will be validated by Pydantic
     company: Optional[str] = None
     phone: Optional[str] = None
     billing_email: Optional[str] = None
@@ -88,7 +88,7 @@ class TenantUpdate(BaseModel):
 class TenantOnboard(BaseModel):
     """Request model for tenant onboarding"""
     name: str = Field(..., min_length=1, max_length=255)
-    email: str = Field(..., regex=r'^[\w\.-]+@[\w\.-]+\.\w+$')
+    email: str  # Will be validated by Pydantic
     plan: TenantPlan = TenantPlan.FREE
     company: Optional[str] = None
     phone: Optional[str] = None

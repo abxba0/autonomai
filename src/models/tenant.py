@@ -27,6 +27,10 @@ class TenantPlan(str, Enum):
     CUSTOM = "custom"
 
 
+# Constants
+COMPLIANCE_RETENTION_DAYS = 365 * 7  # 7 years for compliance (approximately 2555 days)
+
+
 @dataclass
 class TenantPlanLimits:
     """Plan-based limits for tenants"""
@@ -141,7 +145,7 @@ class TenantPlanLimits:
                 enable_workflow_orchestrator=True,
                 enable_plugin_system=True,
                 failure_log_retention_days=365,
-                audit_log_retention_days=2555,  # 7 years for compliance
+                audit_log_retention_days=COMPLIANCE_RETENTION_DAYS,
             ),
         }
         return limits_map.get(plan, cls())
