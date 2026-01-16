@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
 from strawberry.fastapi import GraphQLRouter
+from datetime import datetime
 import uvicorn
 import os
 import asyncio
@@ -418,14 +419,30 @@ async def register_webhook(
     request: WebhookRegisterRequest,
     webhook_manager: WebhookManager = Depends(get_webhook_manager_instance),
 ):
-    """Register a new webhook"""
+    """Register a new webhook (v2)"""
     try:
-        webhook = webhook_manager.register_webhook(
-            url=request.url, events=request.events, secret=request.secret
+        webhook_id = await webhook_manager.register(
+            request.url, request.events, request.secret
         )
-        return WebhookInfo(**webhook)
+        return WebhookInfo(
+            id=webhook_id,
+            url=request.url,
+            events=request.events,
+            created_at=datetime.now().isoformat(),
+            active=True,
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Webhook registration error: {str(e)}")
+
+
+# ============ Batch Processing Routes ============
+
+try:
+    from web.batch_routes import router as batch_router
+    app_v2.include_router(batch_router)
+    logger.info("Batch processing routes added to API v2")
+except Exception as e:
+    logger.warning(f"Failed to load batch processing routes: {e}")
 
 
 @app_v2.get("/webhooks", response_model=List[WebhookInfo])

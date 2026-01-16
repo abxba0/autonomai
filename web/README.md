@@ -149,6 +149,88 @@ async def listen():
 asyncio.run(listen())
 ```
 
+### 4. Batch Processing API (`api_batch.py`, `batch_routes.py`) ✨ NEW
+
+Production-ready async job queuing with Celery for batch operations.
+
+**Key Components:**
+- Celery task queue with Redis backend
+- Batch job models with progress tracking
+- REST API endpoints for job management
+- Parallel workflow execution
+- Fault tolerance and retry logic
+- Multi-worker support
+
+**Supported Batch Types:**
+- `failure_optimization` - Optimize multiple failures
+- `workflow_batch` - Execute multiple workflows
+- `validation_batch` - Validate multiple outputs
+- `custom` - Custom batch processing
+
+**API Endpoints:**
+- `POST /v2/batch/submit` - Submit batch jobs
+- `GET /v2/batch/{job_id}/status` - Get job status
+- `GET /v2/batch/{job_id}/results` - Get job results
+- `POST /v2/batch/{job_id}/cancel` - Cancel jobs
+- `GET /v2/batch/jobs` - List all jobs
+- `GET /v2/batch/stats` - Get statistics
+
+### Quick Start - Batch Processing ✨ NEW
+
+**Prerequisites:**
+```bash
+# Start Redis
+docker run -d -p 6379:6379 redis:latest
+
+# Start Celery worker
+celery -A src.batch.celery_config worker --loglevel=info
+
+# Start API
+python web/api_v2.py
+```
+
+**Submit batch job:**
+```python
+import requests
+
+response = requests.post(
+    "http://localhost:8000/v2/batch/submit",
+    json={
+        "job_type": "failure_optimization",
+        "tasks": [
+            {"failure_description": "Output too short", "severity": "high"},
+            {"failure_description": "Missing fields", "severity": "high"},
+        ],
+        "max_workers": 4,
+        "priority": 1,
+    }
+)
+job = response.json()
+print(f"Job ID: {job['job_id']}")
+```
+
+**Monitor progress:**
+```python
+# Get job status
+response = requests.get(f"http://localhost:8000/v2/batch/{job_id}/status")
+status = response.json()
+
+print(f"Status: {status['status']}")
+print(f"Progress: {status['progress']['progress_percent']:.1f}%")
+print(f"Completed: {status['progress']['completed_tasks']}/{status['progress']['total_tasks']}")
+```
+
+**Get results:**
+```python
+response = requests.get(f"http://localhost:8000/v2/batch/{job_id}/results")
+results = response.json()
+
+for result in results['results']:
+    print(f"Task {result['task_id']}: {'✓' if result['success'] else '✗'}")
+```
+
+See [docs/batch-processing.md](../docs/batch-processing.md) for complete documentation.
+
 ### Quick Start - Webhooks
 
 ```python
