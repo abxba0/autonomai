@@ -11,9 +11,13 @@ import tempfile
 import shutil
 from datetime import datetime
 import time
+import pytest
 
 # Add src directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+# Skip tests if celery is not installed (optional dependency)
+pytest.importorskip("celery")
 
 from src.batch import (
     BatchProcessor,

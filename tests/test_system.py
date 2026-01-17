@@ -14,98 +14,76 @@ def test_imports():
     """Test that all imports work"""
     print("Testing imports...")
 
-    try:
-        # Test direct imports from src directory
-        import sys
+    # Test direct imports from src directory
+    import sys
 
-        sys.path.insert(0, "src")
+    sys.path.insert(0, "src")
 
-        print("✓ SystemConfig imported")
+    print("✓ SystemConfig imported")
 
-        print("✓ FailureEntry imported")
+    print("✓ FailureEntry imported")
 
-        print("✓ CriticResponse imported")
+    print("✓ CriticResponse imported")
 
-        print("✓ VersionMetadata imported")
+    print("✓ VersionMetadata imported")
 
-        print("✓ Validator classes imported")
+    print("✓ Validator classes imported")
 
-        print("\nAll imports successful!")
-        return True
-
-    except Exception as e:
-        print(f"\n✗ Import error: {e}")
-        import traceback
-
-        traceback.print_exc()
-        return False
+    print("\nAll imports successful!")
+    # No return statement needed for pytest
 
 
 def test_system_creation():
     """Test creating the main system"""
     print("\nTesting system creation...")
 
-    try:
-        # This will test the full import chain
-        import sys
+    # This will test the full import chain
+    import sys
 
-        sys.path.insert(0, "src")
-        from src import SelfOptimizingSystem
+    sys.path.insert(0, "src")
+    from src import SelfOptimizingSystem
 
-        system = SelfOptimizingSystem()
-        print("✓ SelfOptimizingSystem created successfully")
+    system = SelfOptimizingSystem()
+    print("✓ SelfOptimizingSystem created successfully")
 
-        # Test getting instructions
-        instructions = system.get_current_instructions()
-        print(f"✓ Got instructions (length: {len(instructions)})")
-
-        return True
-
-    except Exception as e:
-        print(f"\n✗ System creation error: {e}")
-        import traceback
-
-        traceback.print_exc()
-        return False
+    # Test getting instructions
+    instructions = system.get_current_instructions()
+    print(f"✓ Got instructions (length: {len(instructions)})")
+    
+    assert system is not None
+    assert len(instructions) > 0
 
 
 def test_validators():
     """Test validator functionality"""
     print("\nTesting validators...")
 
-    try:
-        import sys
+    import sys
 
-        sys.path.insert(0, "src")
-        from core.validator import JSONValidator, LengthValidator, ValidationPipeline
+    sys.path.insert(0, "src")
+    from src.core.validator import JSONValidator, LengthValidator, ValidationPipeline
 
-        pipeline = ValidationPipeline()
-        pipeline.add_validator(JSONValidator(required_fields=["status"]))
-        pipeline.add_validator(LengthValidator(min_length=5))
+    pipeline = ValidationPipeline()
+    pipeline.add_validator(JSONValidator(required_fields=["status"]))
+    pipeline.add_validator(LengthValidator(min_length=5))
 
-        # Test valid JSON
-        valid_json = '{"status": "ok", "message": "test"}'
-        passed, results = pipeline.validate(valid_json)
-        print(f"✓ Valid JSON test: {passed}")
+    # Test valid JSON
+    valid_json = '{"status": "ok", "message": "test"}'
+    passed, results = pipeline.validate(valid_json)
+    print(f"✓ Valid JSON test: {passed}")
+    assert passed is True
 
-        # Test invalid JSON
-        invalid_json = "not json"
-        passed, results = pipeline.validate(invalid_json)
-        print(f"✓ Invalid JSON test: {not passed}")
+    # Test invalid JSON
+    invalid_json = "not json"
+    passed, results = pipeline.validate(invalid_json)
+    print(f"✓ Invalid JSON test: {not passed}")
+    assert passed is False
 
-        # Test short output
-        short_output = "hi"
-        passed, results = pipeline.validate(short_output)
-        print(f"✓ Short output test: {not passed}")
-
-        return True
-
-    except Exception as e:
-        print(f"\n✗ Validator test error: {e}")
-        import traceback
-
-        traceback.print_exc()
-        return False
+    # Test short output
+    short_output = "hi"
+    passed, results = pipeline.validate(short_output)
+    print(f"✓ Short output test: {not passed}")
+    assert passed is False
 
 
 def main():

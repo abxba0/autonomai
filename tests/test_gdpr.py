@@ -5,6 +5,9 @@ Tests for UK GDPR compliance functionality
 import pytest
 from datetime import datetime, timedelta
 
+# Skip tests if fastapi is not installed (optional dependency)
+pytest.importorskip("fastapi")
+
 from src.security.gdpr import (
     GDPRCompliance,
     ConsentPurpose,

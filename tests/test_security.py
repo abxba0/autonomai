@@ -4,8 +4,12 @@ Test script for security features
 
 import sys
 import os
+import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+
+# Skip tests if fastapi is not installed (optional dependency)
+pytest.importorskip("fastapi")
 
 from src.security import (
     # Authentication

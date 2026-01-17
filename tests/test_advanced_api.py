@@ -5,8 +5,16 @@ Tests for advanced API features: GraphQL, WebSockets, Webhooks, and Versioning
 import pytest
 import asyncio
 import json
+import sys
+import os
 from unittest.mock import Mock, AsyncMock, patch
 from datetime import datetime
+
+# Add web directory to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+# Skip tests if fastapi is not installed (required for websocket handlers)
+pytest.importorskip("fastapi")
 
 # Test webhook manager
 from web.webhook_manager import WebhookManager, Webhook, WebhookEvent

@@ -25,6 +25,7 @@ MANIFEST
 # Regression test outputs
 tests/regression_reports/
 tests/data/performance_baseline.json
+tests/reports/
 
 # Virtual Environments
 venv/
