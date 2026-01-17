@@ -4,9 +4,13 @@ Simple test script for security features (without full system dependencies)
 
 import sys
 import os
+import pytest
 
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+# Skip tests if fastapi is not installed (optional dependency)
+pytest.importorskip("fastapi")
 
 # Import security modules
 from src.security.auth import (
