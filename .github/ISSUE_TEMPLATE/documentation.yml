@@ -1,0 +1,120 @@
+name: Documentation Improvement
+description: Report documentation issues or suggest improvements
+title: "[Docs]: "
+labels: ["documentation", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve our documentation!
+
+  - type: dropdown
+    id: doc_type
+    attributes:
+      label: Documentation Type
+      description: What type of documentation issue is this?
+      options:
+        - Missing Documentation
+        - Incorrect/Outdated Information
+        - Unclear Explanation
+        - Typo/Grammar
+        - Code Example Issue
+        - New Tutorial Needed
+        - API Reference Issue
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Documentation Location
+      description: Which file or page is affected?
+      placeholder: "e.g., docs/getting-started.md, README.md, or URL"
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: Issue Description
+      description: Describe the documentation issue
+      placeholder: What's wrong or missing in the current documentation?
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested Improvement
+      description: How should this be fixed or improved?
+      placeholder: Describe what the documentation should say or include...
+    validations:
+      required: true
+
+  - type: textarea
+    id: example
+    attributes:
+      label: Proposed Content
+      description: If applicable, provide the exact text or code you'd like to see
+      render: markdown
+      placeholder: |
+        Proposed documentation content...
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which component does this documentation relate to?
+      options:
+        - Getting Started
+        - Core Concepts
+        - Workflow Orchestration
+        - Validation & Testing
+        - Plugin Development
+        - Caching & Performance
+        - Multi-Tenant
+        - Distributed Deployment
+        - Security & Compliance
+        - API Reference
+        - Examples
+        - Troubleshooting
+        - Contributing
+        - Other
+
+  - type: dropdown
+    id: audience
+    attributes:
+      label: Target Audience
+      description: Who is this documentation for?
+      options:
+        - Beginners/New Users
+        - Developers/Contributors
+        - System Administrators
+        - Enterprise Users
+        - API Users
+        - All Users
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or references
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I would be willing to submit a PR to fix this
+          required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: I have searched existing documentation issues
+          required: true

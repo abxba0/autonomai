@@ -1,0 +1,146 @@
+name: Bug Report
+description: Report a bug or unexpected behavior
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the information below to help us fix it quickly.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe the bug...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Install with '...'
+        2. Run command '...'
+        3. See error
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen
+      placeholder: Describe what should have happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened
+      placeholder: Describe what actually happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Logs or Screenshots
+      description: Please copy and paste any relevant log output or attach screenshots
+      render: shell
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which component is affected?
+      options:
+        - Core System
+        - Workflow Orchestration
+        - Validation Pipeline
+        - Plugin System
+        - Caching Layer
+        - Multi-Tenant
+        - Distributed Deployment
+        - Security/Auth
+        - Web API
+        - Documentation
+        - Tests
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: What version of AutonomAI are you using?
+      placeholder: "e.g., 0.1.0 or latest from main"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: python_version
+    attributes:
+      label: Python Version
+      description: What version of Python are you using?
+      options:
+        - "3.11"
+        - "3.10"
+        - "3.9"
+        - "3.8"
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: What operating system are you using?
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Docker
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Details
+      description: Additional environment information (AI provider, database, Redis, etc.)
+      placeholder: |
+        - AI Provider: Anthropic Claude
+        - Database: PostgreSQL 14
+        - Redis: 6.2
+        - etc.
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate
+          required: true
+        - label: I have provided all requested information
+          required: true
+        - label: I am using a supported Python version (3.8+)
+          required: false
