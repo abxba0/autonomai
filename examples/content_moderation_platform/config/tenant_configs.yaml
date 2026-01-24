@@ -1,0 +1,93 @@
+# Tenant-specific moderation configurations
+
+gaming_community:
+  name: "Gaming Community"
+  moderation_level: "moderate"
+  auto_approve_threshold: 0.85
+  auto_reject_threshold: 0.35
+  require_review_threshold: 0.6
+  custom_rules:
+    allow_competitive_language: true
+    block_external_links: false
+    require_email_verification: false
+  enabled_validators:
+    - profanity
+    - hate_speech
+    - spam
+  max_requests_per_minute: 200
+  max_requests_per_day: 50000
+  enable_auto_learning: true
+
+professional_forum:
+  name: "Professional Forum"
+  moderation_level: "strict"
+  auto_approve_threshold: 0.95
+  auto_reject_threshold: 0.5
+  require_review_threshold: 0.8
+  custom_rules:
+    allow_competitive_language: false
+    block_external_links: true
+    require_email_verification: true
+  enabled_validators:
+    - profanity
+    - hate_speech
+    - spam
+    - toxicity
+  max_requests_per_minute: 100
+  max_requests_per_day: 20000
+  enable_auto_learning: true
+
+social_platform:
+  name: "Social Media Platform"
+  moderation_level: "moderate"
+  auto_approve_threshold: 0.88
+  auto_reject_threshold: 0.4
+  require_review_threshold: 0.65
+  custom_rules:
+    allow_competitive_language: false
+    block_external_links: false
+    require_email_verification: true
+  enabled_validators:
+    - profanity
+    - hate_speech
+    - spam
+    - toxicity
+  max_requests_per_minute: 500
+  max_requests_per_day: 100000
+  enable_auto_learning: true
+
+kids_platform:
+  name: "Kids Content Platform"
+  moderation_level: "strict"
+  auto_approve_threshold: 0.98
+  auto_reject_threshold: 0.6
+  require_review_threshold: 0.85
+  custom_rules:
+    allow_competitive_language: false
+    block_external_links: true
+    require_email_verification: true
+  enabled_validators:
+    - profanity
+    - hate_speech
+    - spam
+    - toxicity
+  max_requests_per_minute: 150
+  max_requests_per_day: 30000
+  enable_auto_learning: false  # Manual review preferred for kids content
+
+marketplace:
+  name: "Marketplace Listings"
+  moderation_level: "moderate"
+  auto_approve_threshold: 0.90
+  auto_reject_threshold: 0.4
+  require_review_threshold: 0.7
+  custom_rules:
+    allow_competitive_language: false
+    block_external_links: false
+    require_email_verification: true
+  enabled_validators:
+    - spam
+    - profanity
+  max_requests_per_minute: 300
+  max_requests_per_day: 75000
+  enable_auto_learning: true
