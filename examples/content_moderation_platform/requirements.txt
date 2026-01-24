@@ -1,0 +1,22 @@
+# Core dependencies (from main project)
+-e ../..
+
+# Additional dependencies for this example
+pyyaml>=6.0
+fastapi>=0.104.0
+uvicorn>=0.24.0
+redis>=5.0.0
+celery>=5.3.0
+python-jose[cryptography]>=3.3.0
+passlib>=1.7.4
+python-multipart>=0.0.6
+click>=8.1.0
+
+# Optional: Better profanity detection
+better-profanity>=0.7.0
+
+# Development
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+httpx>=0.25.0

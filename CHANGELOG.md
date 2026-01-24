@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Distributed deployment example (examples/distributed_deployment_demo.py)
 - Comprehensive multi-tenant example (examples/multi_tenant_comprehensive_demo.py)
 - Plugin development tutorial (examples/plugin_development_tutorial.py)
+- **Production-ready Content Moderation Platform** (examples/content_moderation_platform/)
+  - Complete SaaS moderation system with multi-tenant support
+  - Custom validators: Profanity, Hate Speech, Spam, Toxicity
+  - AI-powered moderation with DeepSeek integration
+  - Self-learning from human moderator overrides
+  - Batch processing, caching (1000x+ speedup), distributed state
+  - CLI interface and interactive demonstration
+  - 85%+ feature coverage of AutonomAI capabilities
 - GitHub issue templates for bugs, features, and documentation
 - ROADMAP.md for tracking planned features and community requests
 
