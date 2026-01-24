@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or Discussion
+    url: https://github.com/abxba0/autonomai/discussions
+    about: Ask questions or start discussions about AutonomAI
+  - name: Security Vulnerability
+    url: https://github.com/abxba0/autonomai/security/advisories/new
+    about: Report a security vulnerability (private disclosure)
+  - name: Documentation
+    url: https://github.com/abxba0/autonomai/tree/main/docs
+    about: Browse the complete documentation
