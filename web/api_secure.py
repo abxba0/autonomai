@@ -862,6 +862,197 @@ async def list_api_keys(
         raise HTTPException(status_code=500, detail=f"API keys error: {str(e)}")
 
 
+# GDPR Compliance Endpoints
+from src.security.gdpr import (
+    GDPRCompliance,
+    ConsentPurpose,
+    DataExportFormat,
+)
+
+
+# GDPR instance (initialized lazily with database manager)
+_gdpr_instance = None
+
+
+def get_gdpr():
+    """Get or create GDPR compliance instance"""
+    global _gdpr_instance
+    if _gdpr_instance is None:
+        _gdpr_instance = GDPRCompliance(
+            database_manager=None,
+            audit_logger=audit_logger,
+        )
+    return _gdpr_instance
+
+
+class ConsentRequest(BaseModel):
+    purpose: str = Field(..., description="Consent purpose")
+    version: str = Field(default="1.0", description="Privacy policy version")
+    method: str = Field(default="web", description="Consent method")
+
+
+class RectifyRequest(BaseModel):
+    field: str = Field(..., description="Field to update (email or username)")
+    new_value: str = Field(..., min_length=1, max_length=255)
+
+
+class DeletionRequest(BaseModel):
+    reason: Optional[str] = Field(default=None, max_length=1000)
+
+
+@app.post("/gdpr/consent")
+async def grant_consent(
+    request: Request,
+    consent_req: ConsentRequest,
+    user: User = Depends(require_auth),
+    rate_limit_headers: dict = Depends(apply_rate_limit),
+):
+    """Grant consent for a specific purpose"""
+    try:
+        purpose = ConsentPurpose(consent_req.purpose)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid purpose. Valid options: {[p.value for p in ConsentPurpose]}",
+        )
+
+    gdpr = get_gdpr()
+    consent = gdpr.grant_consent(
+        user_id=user.id,
+        purpose=purpose,
+        version=consent_req.version,
+        method=consent_req.method,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("User-Agent"),
+    )
+    return {"success": True, "consent": consent.to_dict()}
+
+
+@app.delete("/gdpr/consent/{purpose}")
+async def withdraw_consent(
+    purpose: str,
+    user: User = Depends(require_auth),
+    rate_limit_headers: dict = Depends(apply_rate_limit),
+):
+    """Withdraw consent for a specific purpose"""
+    try:
+        consent_purpose = ConsentPurpose(purpose)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid purpose. Valid options: {[p.value for p in ConsentPurpose]}",
+        )
+
+    gdpr = get_gdpr()
+    withdrawal = gdpr.withdraw_consent(user_id=user.id, purpose=consent_purpose)
+    return {"success": True, "withdrawal": withdrawal.to_dict()}
+
+
+@app.get("/gdpr/consent")
+async def get_consent_status(
+    user: User = Depends(require_auth),
+    rate_limit_headers: dict = Depends(apply_rate_limit),
+):
+    """Get current consent status for all purposes"""
+    gdpr = get_gdpr()
+    history = gdpr.get_consent_history(user.id)
+    current_status = {}
+    for purpose in ConsentPurpose:
+        current_status[purpose.value] = gdpr.check_consent(user.id, purpose)
+    return {"consent_history": history, "current_status": current_status}
+
+
+@app.get("/gdpr/data-export")
+async def export_user_data(
+    format: str = "json",
+    user: User = Depends(require_auth),
+    rate_limit_headers: dict = Depends(apply_rate_limit),
+):
+    """Export all user data (Right to Access / Data Portability)"""
+    try:
+        export_format = DataExportFormat(format)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid format. Valid options: {[f.value for f in DataExportFormat]}",
+        )
+
+    gdpr = get_gdpr()
+    request_obj = gdpr.request_data_access(user_id=user.id, format=export_format)
+    exported = gdpr.export_user_data(user_id=user.id, format=export_format)
+    return {
+        "request_id": request_obj.request_id,
+        "format": format,
+        "data": exported,
+    }
+
+
+@app.post("/gdpr/deletion")
+async def request_deletion(
+    deletion_req: DeletionRequest,
+    user: User = Depends(require_auth),
+    rate_limit_headers: dict = Depends(apply_rate_limit),
+):
+    """Request data deletion (Right to Erasure) with 30-day grace period"""
+    gdpr = get_gdpr()
+    request_obj = gdpr.request_data_deletion(
+        user_id=user.id, reason=deletion_req.reason
+    )
+    return {
+        "success": True,
+        "request": request_obj.to_dict(),
+        "message": "Deletion request created with 30-day grace period. "
+        "You may cancel this request during the grace period.",
+    }
+
+
+@app.delete("/gdpr/deletion/{request_id}")
+async def cancel_deletion(
+    request_id: str,
+    user: User = Depends(require_auth),
+    rate_limit_headers: dict = Depends(apply_rate_limit),
+):
+    """Cancel a pending deletion request during grace period"""
+    gdpr = get_gdpr()
+    success = gdpr.cancel_deletion_request(request_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot cancel request. Either not found or no longer in grace period.",
+        )
+    return {"success": True, "message": "Deletion request cancelled."}
+
+
+@app.put("/gdpr/rectify")
+async def rectify_data(
+    rectify_req: RectifyRequest,
+    user: User = Depends(require_auth),
+    rate_limit_headers: dict = Depends(apply_rate_limit),
+):
+    """Update incorrect personal data (Right to Rectification)"""
+    gdpr = get_gdpr()
+    result = gdpr.rectify_user_data(
+        user_id=user.id, field=rectify_req.field, new_value=rectify_req.new_value
+    )
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result.get("error", "Rectification failed"),
+        )
+    return result
+
+
+@app.get("/gdpr/processing-activities")
+async def get_processing_activities(
+    user: User = Depends(require_auth),
+    rate_limit_headers: dict = Depends(apply_rate_limit),
+):
+    """Get list of data processing activities"""
+    gdpr = get_gdpr()
+    activities = gdpr.get_processing_activities(user.id)
+    return {"activities": activities}
+
+
 if __name__ == "__main__":
     # Run the server
     host = os.getenv("HOST", "0.0.0.0")
