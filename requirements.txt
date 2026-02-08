@@ -1,4 +1,4 @@
-# Core dependencies only - for minimal installation
+# Core runtime dependencies - for minimal installation
 # For additional features, install with: pip install -e ".[web,distributed]" or pip install -e ".[all]"
 # For development, also install: pip install -r requirements/dev.txt
 langchain>=0.1.0
