@@ -17,6 +17,12 @@ class InstructionFileHandler:
     """Handles file I/O and Markdown operations for instruction management."""
 
     def __init__(self, config: SystemConfig, md_handler: Optional[MarkdownHandler] = None):
+        """Initialize the file handler.
+
+        Args:
+            config: System configuration with instruction paths.
+            md_handler: Optional MarkdownHandler for dependency injection (primarily for testing).
+        """
         self.config = config
         self.instructions_path = config.instructions_dir / config.instructions_file
         self.pending_review_path = config.instructions_dir / config.pending_review_file
