@@ -4,6 +4,17 @@ Workflow Orchestrator
 Top-level coordination for multi-step workflows using the
 Planner-Executor-Critic pattern. Delegates to specialized subcomponents
 for planning, execution, control flow, and optimization.
+
+Supports dependency injection: pass pre-built subcomponents or let the
+orchestrator create them automatically from config.
+
+Example usage with dependency injection::
+
+    from src.core.workflow import WorkflowOrchestrator, WorkflowPlanner, WorkflowExecutor
+
+    planner = WorkflowPlanner(...)
+    executor = WorkflowExecutor(...)
+    orchestrator = WorkflowOrchestrator(planner=planner, executor=executor)
 """
 
 from typing import Optional, Dict, Any, List
@@ -23,15 +34,19 @@ from .optimizer import StepOptimizer
 
 class WorkflowOrchestrator:
     """
-    Orchestrates multi-step workflows using the Planner-Executor-Critic pattern
-    
+    Orchestrates multi-step workflows using the Planner-Executor-Critic pattern.
+
+    Supports dependency injection: pre-built subcomponents (planner, executor,
+    control_flow, optimizer) can be passed to the constructor. Any component not
+    provided will be created automatically from config.
+
     Features:
     - Dynamic planning: Generates workflow plans from high-level goals
     - Specialized execution: Executes steps with role-specific instructions
     - Self-optimization: Learns from failures to improve planning and execution
     - Trajectory correction: Optimizes entire workflow patterns, not just individual steps
     """
-    
+
     # Safety limit: extra iterations beyond calculated retries to prevent edge case infinite loops
     WORKFLOW_SAFETY_BUFFER = 10
 
@@ -39,11 +54,20 @@ class WorkflowOrchestrator:
         self,
         config: Optional[SystemConfig] = None,
         instruction_manager: Optional[InstructionManager] = None,
+        *,
+        planner_component: Optional[WorkflowPlanner] = None,
+        executor_component: Optional[WorkflowExecutor] = None,
+        control_flow_component: Optional[ControlFlowEngine] = None,
+        optimizer_component: Optional[StepOptimizer] = None,
     ):
         self.config = config or SystemConfig()
         self.base_instruction_manager = instruction_manager or InstructionManager(
             self.config
         )
+
+        # Track active workflows
+        self.active_workflows: Dict[str, WorkflowPlan] = {}
+        self.workflow_history: List[WorkflowPlan] = []
 
         # Initialize workflow-specific instruction manager
         self.workflow_instruction_manager = WorkflowInstructionManager(
@@ -51,53 +75,33 @@ class WorkflowOrchestrator:
         )
 
         # Initialize models for different roles
-        self._init_planner()
-        self._init_executor()
-        self._init_critic()
-
-        # Track active workflows
-        self.active_workflows: Dict[str, WorkflowPlan] = {}
-        self.workflow_history: List[WorkflowPlan] = []
-
-        # Initialize subcomponents
-        self._init_subcomponents()
-
-    def _init_planner(self):
-        """Initialize the Planner model with planner instructions"""
         self.planner = MainModel(
             self.config,
             self.base_instruction_manager,
             validation_pipeline=None,
         )
-
-    def _init_executor(self):
-        """Initialize the Executor model with actor instructions"""
         self.executor = MainModel(
             self.config,
             self.base_instruction_manager,
             validation_pipeline=None,
         )
-
-    def _init_critic(self):
-        """Initialize the Critic model for workflow optimization"""
         self.critic = CriticModel(self.config, self.base_instruction_manager)
 
-    def _init_subcomponents(self):
-        """Initialize all subcomponents with dependency injection"""
-        # Optimizer
-        self._optimizer = StepOptimizer(
+        # Accept injected subcomponents or create defaults
+        self._optimizer = optimizer_component or StepOptimizer(
             critic_model=self.critic,
             workflow_instruction_manager=self.workflow_instruction_manager,
         )
 
-        # Control flow engine (needs execute_step_by_type callback)
-        self._control_flow = ControlFlowEngine(
-            active_workflows=self.active_workflows,
-            execute_step_by_type_fn=None,  # Set after executor is created
-        )
+        if control_flow_component is not None:
+            self._control_flow = control_flow_component
+        else:
+            self._control_flow = ControlFlowEngine(
+                active_workflows=self.active_workflows,
+                execute_step_by_type_fn=None,  # Wired below
+            )
 
-        # Executor
-        self._executor_component = WorkflowExecutor(
+        self._executor_component = executor_component or WorkflowExecutor(
             workflow_instruction_manager=self.workflow_instruction_manager,
             executor_model=self.executor,
             base_instruction_manager=self.base_instruction_manager,
@@ -106,11 +110,14 @@ class WorkflowOrchestrator:
             execute_workflow_fn=self.execute_workflow,
         )
 
-        # Wire up the control flow's step execution callback
-        self._control_flow._execute_step_by_type = self._executor_component.execute_step_by_type
+        # Wire up the control flow's step execution callback only for
+        # internally-created control flow engines (not injected ones)
+        if control_flow_component is None:
+            self._control_flow._execute_step_by_type = (
+                self._executor_component.execute_step_by_type
+            )
 
-        # Planner
-        self._planner_component = WorkflowPlanner(
+        self._planner_component = planner_component or WorkflowPlanner(
             workflow_instruction_manager=self.workflow_instruction_manager,
             planner_model=self.planner,
             base_instruction_manager=self.base_instruction_manager,
@@ -143,9 +150,7 @@ class WorkflowOrchestrator:
     def execute_step(
         self, workflow_id: str, step_id: str, inputs: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """
-        Execute a single workflow step using the Executor
-        """
+        """Execute a single workflow step using the Executor"""
         return self._executor_component.execute_step(workflow_id, step_id, inputs)
 
     def _execute_step_by_type(
@@ -154,9 +159,7 @@ class WorkflowOrchestrator:
         """Execute a step based on its type"""
         return self._executor_component.execute_step_by_type(workflow_id, step_id, context)
 
-    def _evaluate_condition(
-        self, condition: str, context: Dict[str, Any]
-    ) -> bool:
+    def _evaluate_condition(self, condition: str, context: Dict[str, Any]) -> bool:
         """Evaluate a condition expression in the given context"""
         return self._control_flow._evaluate_condition(condition, context)
 
@@ -295,18 +298,6 @@ class WorkflowOrchestrator:
     def _handle_step_failure(self, workflow: WorkflowPlan, failed_step: WorkflowStep):
         """Handle a failed workflow step using the Critic"""
         self._optimizer.handle_step_failure(workflow, failed_step)
-
-    def _determine_failure_source(self, workflow, failed_step):
-        """Determine if failure was due to planning or execution"""
-        return self._optimizer._determine_failure_source(workflow, failed_step)
-
-    def _optimize_planner(self, failure_entry, workflow_failure):
-        """Optimize planner instructions based on workflow failure"""
-        return self._optimizer._optimize_planner(failure_entry, workflow_failure)
-
-    def _optimize_actor(self, failure_entry, workflow_failure):
-        """Optimize actor instructions based on execution failure"""
-        return self._optimizer._optimize_actor(failure_entry, workflow_failure)
 
     def get_workflow_status(self, workflow_id: str) -> Optional[Dict[str, Any]]:
         """Get status of a workflow"""

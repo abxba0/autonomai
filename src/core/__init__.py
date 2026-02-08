@@ -26,6 +26,14 @@ from .tenant_manager import (
     TenantAwareDataFilter,
 )
 
+# Workflow package subcomponents
+from .workflow import (
+    WorkflowPlanner,
+    WorkflowExecutor,
+    ControlFlowEngine,
+    StepOptimizer,
+)
+
 __all__ = [
     # Core
     "MainModel",
@@ -53,4 +61,9 @@ __all__ = [
     "TenantConfig",
     "TenantContext",
     "TenantAwareDataFilter",
+    # Workflow subcomponents
+    "WorkflowPlanner",
+    "WorkflowExecutor",
+    "ControlFlowEngine",
+    "StepOptimizer",
 ]

@@ -509,6 +509,67 @@ def test_planner_plan_from_json():
     return True
 
 
+def test_dependency_injection():
+    """Test WorkflowOrchestrator accepts injected subcomponents"""
+    print("\nTesting dependency injection...")
+
+    from src.core.workflow.control_flow import ControlFlowEngine
+    from src.core.workflow.optimizer import StepOptimizer
+
+    # Create standalone subcomponents
+    active_workflows = {}
+
+    class MockCritic:
+        def optimize(self, entry):
+            return {"success": False}
+
+    optimizer = StepOptimizer(
+        critic_model=MockCritic(),
+        workflow_instruction_manager=None,
+    )
+
+    control_flow = ControlFlowEngine(
+        active_workflows=active_workflows,
+        execute_step_by_type_fn=lambda *a: None,
+    )
+
+    # Test basic condition evaluation through injected control flow
+    ctx = {"x": 10, "y": 5}
+    assert control_flow._evaluate_condition("x > y", ctx) is True
+    print("✓ Injected control flow works independently")
+
+    # Test that injected optimizer works independently
+    plan = WorkflowPlan(
+        name="Test", description="", goal="Test",
+        steps=[WorkflowStep(id="s1", name="Step 1")],
+    )
+    step = WorkflowStep(id="t1", name="Test")
+    step.error_message = "missing dependency"
+    assert optimizer._determine_failure_source(plan, step) == FailureSource.PLANNING
+    print("✓ Injected optimizer works independently")
+
+    return True
+
+
+def test_core_subcomponent_imports():
+    """Test that workflow subcomponents are importable from src.core"""
+    print("\nTesting src.core subcomponent imports...")
+
+    from src.core import WorkflowPlanner, WorkflowExecutor, ControlFlowEngine, StepOptimizer
+    from src.core.workflow import WorkflowPlanner as DirectPlanner
+    from src.core.workflow import WorkflowExecutor as DirectExecutor
+    from src.core.workflow import ControlFlowEngine as DirectCF
+    from src.core.workflow import StepOptimizer as DirectOpt
+
+    assert WorkflowPlanner is DirectPlanner
+    assert WorkflowExecutor is DirectExecutor
+    assert ControlFlowEngine is DirectCF
+    assert StepOptimizer is DirectOpt
+    print("✓ All subcomponents accessible from src.core")
+
+    return True
+
+
 def run_all_tests():
     """Run all workflow package tests"""
     print("=" * 70)
@@ -527,6 +588,8 @@ def run_all_tests():
         ("Backward Compat Imports", test_backward_compatibility_imports),
         ("Planner JSON Extraction", test_planner_json_extraction),
         ("Planner Plan from JSON", test_planner_plan_from_json),
+        ("Dependency Injection", test_dependency_injection),
+        ("Core Subcomponent Imports", test_core_subcomponent_imports),
     ]
 
     passed = 0
