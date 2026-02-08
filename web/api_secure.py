@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, validator
 from typing import Optional, List, Dict, Any
 import uvicorn
 import os
+import secrets
 import time
 from dotenv import load_dotenv
 from datetime import datetime
@@ -117,13 +118,31 @@ class APIUserProvider(UserProvider):
     with secure password hashing (e.g., bcrypt, argon2).
     """
     
+    # Default password constant
+    DEFAULT_PASSWORD = "CHANGE_ME_IN_PRODUCTION"
+    
     def __init__(self):
         self.users_db = {}
         # In production, passwords should be loaded from environment or secure storage
         # and hashed with bcrypt/argon2
+        admin_password = os.getenv("ADMIN_PASSWORD")
+        api_client_password = os.getenv("API_CLIENT_PASSWORD")
+        
+        # Fail if passwords not set (instead of using insecure defaults)
+        if not admin_password:
+            raise RuntimeError(
+                "ADMIN_PASSWORD environment variable is required. "
+                "Please set a secure password for the admin user."
+            )
+        if not api_client_password:
+            raise RuntimeError(
+                "API_CLIENT_PASSWORD environment variable is required. "
+                "Please set a secure password for the API client user."
+            )
+        
         self.passwords = {
-            "admin": os.getenv("ADMIN_PASSWORD", "CHANGE_ME_IN_PRODUCTION"),
-            "api_client": os.getenv("API_CLIENT_PASSWORD", "CHANGE_ME_IN_PRODUCTION"),
+            "admin": admin_password,
+            "api_client": api_client_password,
         }
         self._initialize_users()
     
@@ -154,9 +173,9 @@ class APIUserProvider(UserProvider):
         )
         self.users_db[api_client.username] = api_client
         
-        # Log the API key for first setup (in production, provide via secure channel)
-        if os.getenv("DEBUG", "false").lower() == "true":
-            print(f"[SETUP] API Client Key: {api_key}")
+        # Store API key for initial distribution (should be retrieved via secure channel)
+        # Note: In production, use a secure key management system or one-time retrieval endpoint
+        self._api_client_key = api_key
     
     def get_user(self, username: str):
         return self.users_db.get(username)
@@ -168,7 +187,8 @@ class APIUserProvider(UserProvider):
         
         # In production, use proper password hashing (bcrypt.checkpw)
         expected_password = self.passwords.get(username)
-        if expected_password and password == expected_password:
+        # Use constant-time comparison to prevent timing attacks
+        if expected_password and secrets.compare_digest(password, expected_password):
             return user
         return None
     
@@ -201,14 +221,10 @@ async def startup_event():
     user_provider = APIUserProvider()
     set_user_provider(user_provider)
     
-    # Warn about insecure defaults in production
-    if os.getenv("ADMIN_PASSWORD") == "CHANGE_ME_IN_PRODUCTION" or not os.getenv("ADMIN_PASSWORD"):
-        print("\n" + "=" * 70)
-        print("⚠️  WARNING: Using default admin password!")
-        print("   Set ADMIN_PASSWORD environment variable in production")
-        print("=" * 70 + "\n")
-    
     print("✓ Authentication system initialized")
+    
+    # Note: API key for api_client user is stored securely
+    # For initial setup, retrieve via secure administrative endpoint or key management system
 
 
 # Pydantic models for API requests/responses

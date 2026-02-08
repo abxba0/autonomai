@@ -23,6 +23,14 @@ if not SECRET_KEY:
         "Generate one with: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
     )
 
+# Validate secret key strength
+if len(SECRET_KEY) < 32:
+    raise RuntimeError(
+        f"JWT_SECRET_KEY is too short ({len(SECRET_KEY)} characters). "
+        "Please use a key of at least 32 characters for security. "
+        "Generate one with: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+    )
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7

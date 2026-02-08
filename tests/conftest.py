@@ -7,6 +7,7 @@ This file provides common fixtures that can be used across all test files.
 import pytest
 import sys
 import os
+import secrets
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -133,9 +134,9 @@ def mock_user_provider():
             if not user or not user.is_active:
                 return None
 
-            # Verify password against demo passwords
+            # Verify password against demo passwords using constant-time comparison
             expected_password = self.passwords.get(username)
-            if expected_password and password == expected_password:
+            if expected_password and secrets.compare_digest(password, expected_password):
                 return user
             return None
 
