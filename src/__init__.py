@@ -18,7 +18,7 @@ from .core.validator import (
     RegexValidator,
     CustomValidator,
 )
-from .core.workflow_orchestrator import WorkflowOrchestrator
+from .core.workflow import WorkflowOrchestrator
 from .models.config import SystemConfig, FailureEntry
 from .models.critic_response import CriticResponse
 from .models.workflow import (
@@ -321,7 +321,7 @@ class SelfOptimizingSystem:
             - results: Detailed results for each step
         """
         if not hasattr(self, 'workflow_orchestrator'):
-            from .core.workflow_orchestrator import WorkflowOrchestrator
+            from .core.workflow import WorkflowOrchestrator
             self.workflow_orchestrator = WorkflowOrchestrator(
                 self.config,
                 self.instruction_manager
