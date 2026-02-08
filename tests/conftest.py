@@ -12,6 +12,10 @@ import secrets
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+# Set JWT_SECRET_KEY for tests if not already set
+if not os.environ.get("JWT_SECRET_KEY"):
+    os.environ["JWT_SECRET_KEY"] = secrets.token_urlsafe(32)
+
 # Import mock classes
 from tests.mocks.models import (
     MockModel,

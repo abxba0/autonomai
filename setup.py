@@ -35,6 +35,12 @@ setup(
         "distributed": distributed_requirements,
         "local": local_requirements,
         "multimodal": multimodal_requirements,
+        "test": [
+            "pytest>=7.0.0",
+            "pytest-asyncio>=0.21.0",
+            "pytest-cov>=4.0.0",
+            "hypothesis>=6.0.0",
+        ],
         "all": web_requirements
         + distributed_requirements
         + local_requirements
