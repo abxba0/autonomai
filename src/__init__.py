@@ -42,37 +42,45 @@ from .plugins import (
     WorkflowStepPlugin,
 )
 
+# Modular components
+from .system_initializer import SystemInitializer
+from .feedback_processor import FeedbackProcessor
+from .workflow_manager import WorkflowManager
+from .system_status import SystemStatus
+
 
 class SelfOptimizingSystem:
-    """Main interface for the self-optimizing system"""
+    """Main interface for the self-optimizing system.
+
+    Composes SystemInitializer, FeedbackProcessor, WorkflowManager,
+    and SystemStatus to provide a unified API while keeping each
+    concern in its own module.
+    """
 
     def __init__(self, config: Optional[SystemConfig] = None):
         self.config = config or SystemConfig()
 
-        # Initialize distributed state manager if enabled
-        self.state_manager = None
-        if self.config.enable_distributed_state:
-            from .storage.distributed_state import DistributedStateManager, DistributedStateConfig
-            
-            state_config = DistributedStateConfig(
-                enabled=True,
-                redis_url=self.config.redis_state_url,
-                lock_timeout=self.config.distributed_lock_timeout,
-            )
-            self.state_manager = DistributedStateManager(state_config)
+        # Initialize all components via SystemInitializer
+        components = SystemInitializer.initialize(self.config)
+        self.state_manager = components["state_manager"]
+        self.instruction_manager = components["instruction_manager"]
+        self.validation_pipeline = components["validation_pipeline"]
+        self.main_model = components["main_model"]
+        self.critic_model = components["critic_model"]
+        self.context_analyzer = components["context_analyzer"]
 
-        # Initialize components
-        self.instruction_manager = InstructionManager(self.config, state_manager=self.state_manager)
-        self.validation_pipeline = ValidationPipeline()
-        self.main_model = MainModel(
-            self.config, self.instruction_manager, self.validation_pipeline
+        # Compose modular subsystems
+        self._feedback_processor = FeedbackProcessor(
+            self.instruction_manager,
+            self.critic_model,
+            self.context_analyzer,
+            self.config,
         )
-        self.critic_model = CriticModel(self.config, self.instruction_manager)
-
-        # Initialize context analyzer with optional LLM support
-        self.context_analyzer = ContextAnalyzer(
-            use_llm=True,
-            llm_model=self.critic_model.model,  # Use critic model for analysis
+        self._workflow_manager = WorkflowManager(
+            self.config, self.instruction_manager
+        )
+        self._system_status = SystemStatus(
+            self.config, self.instruction_manager, self.validation_pipeline
         )
 
         # Track pending optimizations
@@ -140,19 +148,19 @@ class SelfOptimizingSystem:
 
     def get_version_history(self):
         """Get version history"""
-        return self.instruction_manager.version_controller.get_version_history()
+        return self._system_status.get_version_history()
 
     def rollback(self, steps: int = 1) -> bool:
         """Rollback N versions"""
-        return self.instruction_manager.rollback(steps)
+        return self._system_status.rollback(steps)
 
     def rollback_to_version(self, version_id: str) -> bool:
         """Rollback to specific version"""
-        return self.instruction_manager.rollback_to_version(version_id)
+        return self._system_status.rollback_to_version(version_id)
 
     def get_current_instructions(self) -> str:
         """Get current instructions"""
-        return self.instruction_manager.get_full_instructions()
+        return self._system_status.get_current_instructions()
 
     def process_failure(
         self,
@@ -163,31 +171,13 @@ class SelfOptimizingSystem:
         validation_results: Optional[List[tuple]] = None,
     ) -> Dict[str, Any]:
         """Process a failure and trigger optimization if enabled"""
-        failure = FailureEntry(
+        return self._feedback_processor.process_failure(
             trigger_type=trigger_type,
             failure_description=failure_description,
             user_query=user_query,
             last_model_output=last_model_output,
-            validation_errors=validation_results,
+            validation_results=validation_results,
         )
-
-        self.instruction_manager.add_failure(failure)
-
-        if self.config.enable_auto_optimization:
-            optimization_result = self.critic_model.optimize(failure)
-            return {
-                "success": True,
-                "optimization_attempted": True,
-                "optimization_result": optimization_result,
-                "failure_id": failure.id,
-            }
-
-        return {
-            "success": True,
-            "optimization_attempted": False,
-            "message": "Auto-optimization disabled",
-            "failure_id": failure.id,
-        }
 
     def process_feedback(
         self,
@@ -197,11 +187,11 @@ class SelfOptimizingSystem:
         feedback_details: str,
     ) -> Dict[str, Any]:
         """Process user feedback about model output"""
-        return self.process_failure(
-            trigger_type="human_feedback",
-            failure_description=f"User feedback: {feedback_details}",
+        return self._feedback_processor.process_feedback(
             user_query=user_query,
-            last_model_output=model_output,
+            model_output=model_output,
+            feedback_type=feedback_type,
+            feedback_details=feedback_details,
         )
 
     def validate_output(self, output: str) -> bool:
@@ -211,30 +201,11 @@ class SelfOptimizingSystem:
 
     def get_failure_history(self, limit: int = 50) -> List[FailureEntry]:
         """Get recent failure history"""
-        # This would need to be implemented in InstructionManager
-        # For now, return empty list
-        return []
+        return self._system_status.get_failure_history(limit)
 
     def get_status(self) -> Dict[str, Any]:
         """Get system status information"""
-        versions = self.get_version_history()
-        return {
-            "system": "Self-Optimizing Instruction Library",
-            "status": "operational",
-            "config": {
-                "main_model": self.config.main_model,
-                "critic_model": self.config.critic_model,
-                "enable_auto_optimization": self.config.enable_auto_optimization,
-                "enable_correction_detection": self.config.enable_correction_detection,
-            },
-            "versions": {
-                "total": len(versions),
-                "latest": versions[-1]["version_id"] if versions else None,
-            },
-            "validation": {
-                "validators_count": len(self.validation_pipeline.validators),
-            },
-        }
+        return self._system_status.get_status()
 
     def analyze_feedback_context(
         self,
@@ -257,44 +228,12 @@ class SelfOptimizingSystem:
         Returns:
             Dict containing analysis results and extracted rules
         """
-        # Analyze the conversation
-        analysis_result = self.context_analyzer.analyze_conversation(
-            conversation_history,
+        return self._feedback_processor.analyze_feedback_context(
+            conversation_history=conversation_history,
             focus_recent=focus_recent,
             min_confidence=min_confidence,
+            auto_apply=auto_apply,
         )
-
-        if not analysis_result.get("success"):
-            return analysis_result
-
-        # Format rules for display
-        formatted_display = self.context_analyzer.format_rules_for_display(
-            analysis_result
-        )
-
-        # Create instruction updates
-        instruction_updates = self.context_analyzer.create_instruction_updates(
-            analysis_result, format="markdown"
-        )
-
-        result = {
-            "success": True,
-            "analysis": analysis_result,
-            "formatted_display": formatted_display,
-            "instruction_updates": instruction_updates,
-            "rules_count": len(analysis_result.get("rules", [])),
-            "dont_rules_count": len(analysis_result.get("dont_rules", [])),
-            "patterns_count": len(analysis_result.get("patterns", [])),
-        }
-
-        # Optionally auto-apply the rules
-        if auto_apply and instruction_updates:
-            apply_result = self._apply_context_rules(
-                instruction_updates, analysis_result
-            )
-            result["auto_apply_result"] = apply_result
-
-        return result
 
     def execute_workflow(
         self,
@@ -304,15 +243,15 @@ class SelfOptimizingSystem:
     ) -> Dict[str, Any]:
         """
         Execute a multi-step workflow from a high-level goal
-        
+
         This creates a workflow plan using the Planner, executes steps with the Executor,
         and automatically optimizes based on failures using the Critic.
-        
+
         Args:
             goal: The high-level objective to achieve
             context: Optional context information for planning
             max_retries: Maximum retries for failed steps
-            
+
         Returns:
             Dict with workflow execution results including:
             - workflow_id: Unique workflow identifier
@@ -320,61 +259,7 @@ class SelfOptimizingSystem:
             - steps_completed: Number of successful steps
             - results: Detailed results for each step
         """
-        if not hasattr(self, 'workflow_orchestrator'):
-            from .core.workflow import WorkflowOrchestrator
-            self.workflow_orchestrator = WorkflowOrchestrator(
-                self.config,
-                self.instruction_manager
-            )
-        
-        return self.workflow_orchestrator.execute_workflow(goal, context, max_retries)
-
-    def _apply_context_rules(
-        self, instruction_updates: str, analysis_result: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """
-        Apply extracted rules from context analysis to system instructions
-
-        Args:
-            instruction_updates: Formatted instruction updates
-            analysis_result: Analysis result from context analyzer
-
-        Returns:
-            Dict with application status
-        """
-        try:
-            # Create a feedback entry for this context-based update
-            feedback_description = f"Context analysis extracted {analysis_result.get('rules_count', 0)} positive rules and {analysis_result.get('dont_rules_count', 0)} negative rules"
-
-            failure = FailureEntry(
-                trigger_type="human_feedback",
-                failure_description=feedback_description,
-                severity="moderate",
-                user_feedback=instruction_updates,
-            )
-
-            self.instruction_manager.add_failure(failure)
-
-            # Try to optimize with the extracted rules
-            if self.config.enable_auto_optimization:
-                optimization_result = self.critic_model.optimize(failure)
-                return {
-                    "success": True,
-                    "optimization_attempted": True,
-                    "optimization_result": optimization_result,
-                }
-            else:
-                return {
-                    "success": True,
-                    "optimization_attempted": False,
-                    "message": "Auto-optimization is disabled. Rules logged for manual review.",
-                }
-        except Exception as e:
-            return {
-                "success": False,
-                "error": str(e),
-                "message": "Failed to apply context rules",
-            }
+        return self._workflow_manager.execute_workflow(goal, context, max_retries)
 
 
 __all__ = [
@@ -406,4 +291,9 @@ __all__ = [
     "OptimizerPlugin",
     "FailureAnalyzerPlugin",
     "WorkflowStepPlugin",
+    # Modular components
+    "SystemInitializer",
+    "FeedbackProcessor",
+    "WorkflowManager",
+    "SystemStatus",
 ]
