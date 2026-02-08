@@ -1,29 +1,13 @@
 from typing import Optional, Dict, Any, List
-import os
 from dotenv import load_dotenv
 import logging
 
-# LangChain imports are optional - will be imported only if needed
-# from langchain_anthropic import ChatAnthropic
-# from langchain_openai import ChatOpenAI
-# from langchain_core.messages import HumanMessage, SystemMessage
-
 from ..models.config import SystemConfig, FailureEntry
-from ..models.exceptions import ConfigurationError
 from .instruction_manager import InstructionManager
 from .validator import ValidationPipeline
 from .correction_detector import CorrectionDetector
-
-# Cache imports
-try:
-    from ..cache import CacheManager, CacheConfig, CacheStrategy, LLMResponseCache
-    CACHE_AVAILABLE = True
-except ImportError:
-    CACHE_AVAILABLE = False
-    CacheManager = None
-    CacheConfig = None
-    CacheStrategy = None
-    LLMResponseCache = None
+from .cache_initializer import initialize_cache
+from .providers import detect_provider, initialize_provider
 
 logger = logging.getLogger(__name__)
 
@@ -65,204 +49,15 @@ class MainModel:
 
     def _initialize_cache(self):
         """Initialize cache manager and LLM response cache"""
-        if not CACHE_AVAILABLE:
-            logger.warning("Cache module not available. Caching disabled.")
-            return
-
-        try:
-            # Create cache config from system config
-            cache_config = CacheConfig(
-                enabled=self.config.enable_caching,
-                redis_url=self.config.cache_redis_url,
-                redis_db=self.config.cache_redis_db,
-                redis_password=self.config.cache_redis_password,
-                default_ttl=self.config.cache_default_ttl,
-                max_memory_mb=self.config.cache_max_memory_mb,
-                strategy=CacheStrategy(self.config.cache_strategy),
-            )
-
-            # Initialize cache manager
-            self.cache_manager = CacheManager(cache_config)
-
-            # Initialize LLM response cache
-            self.llm_cache = LLMResponseCache(
-                cache_manager=self.cache_manager,
-                include_context_in_key=self.config.cache_include_context_in_key,
-            )
-
-            logger.info("Cache initialized successfully")
-
-        except Exception as e:
-            logger.error(f"Failed to initialize cache: {e}")
-            logger.warning("Proceeding without caching")
-            self.cache_manager = None
-            self.llm_cache = None
+        self.cache_manager, self.llm_cache = initialize_cache(self.config)
 
     def _initialize_model(self):
         """Initialize the language model with LangChain"""
-        model_name = self.config.main_model.lower()
-        provider = (
-            self.config.main_model_provider.lower()
-            if self.config.main_model_provider
-            else None
-        )
-
-        # Detect provider from model name if not explicitly set
-        if not provider:
-            provider = self._detect_provider(model_name)
-
-        # Initialize based on provider
-        if provider == "anthropic":
-            return self._init_anthropic()
-        elif provider == "openai":
-            return self._init_openai()
-        elif provider == "google":
-            return self._init_google()
-        elif provider == "deepseek":
-            return self._init_deepseek()
-        elif provider == "openrouter":
-            return self._init_openrouter()
-        else:
-            # Raise error instead of falling back to mock
-            raise ConfigurationError(
-                f"No API key configured for model '{self.config.main_model}'. "
-                "Set ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY, "
-                "DEEPSEEK_API_KEY, or OPENROUTER_API_KEY. "
-                "For testing without API keys, use the mock fixtures from tests/mocks/"
-            )
+        return initialize_provider(self.config)
 
     def _detect_provider(self, model_name: str) -> str:
         """Auto-detect provider from model name"""
-        if "claude" in model_name or "anthropic" in model_name:
-            return "anthropic"
-        elif "gpt" in model_name or "openai" in model_name:
-            return "openai"
-        elif "gemini" in model_name or "google" in model_name:
-            return "google"
-        elif "deepseek" in model_name:
-            return "deepseek"
-        elif "openrouter" in model_name:
-            return "openrouter"
-        return "unknown"
-
-    def _init_anthropic(self):
-        """Initialize Anthropic Claude model"""
-        try:
-            from langchain_anthropic import ChatAnthropic
-        except ImportError:
-            raise ConfigurationError(
-                "langchain-anthropic not installed. Install with: pip install langchain-anthropic"
-            )
-
-        api_key = os.getenv("ANTHROPIC_API_KEY")
-        if not api_key:
-            raise ConfigurationError(
-                "ANTHROPIC_API_KEY not found. Set it in your environment or .env file. "
-                "For testing without API keys, use the mock fixtures from tests/mocks/"
-            )
-
-        return ChatAnthropic(
-            model=self.config.main_model,
-            temperature=self.config.temperature_main,
-            api_key=api_key,
-        )
-
-    def _init_openai(self):
-        """Initialize OpenAI GPT model"""
-        try:
-            from langchain_openai import ChatOpenAI
-        except ImportError:
-            raise ConfigurationError(
-                "langchain-openai not installed. Install with: pip install langchain-openai"
-            )
-
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ConfigurationError(
-                "OPENAI_API_KEY not found. Set it in your environment or .env file. "
-                "For testing without API keys, use the mock fixtures from tests/mocks/"
-            )
-
-        return ChatOpenAI(
-            model=self.config.main_model,
-            temperature=self.config.temperature_main,
-            api_key=api_key,
-        )
-
-    def _init_google(self):
-        """Initialize Google Gemini model"""
-        try:
-            from langchain_google_genai import ChatGoogleGenerativeAI
-        except ImportError:
-            raise ConfigurationError(
-                "langchain-google-genai not installed. Install with: pip install langchain-google-genai"
-            )
-
-        api_key = os.getenv("GOOGLE_API_KEY")
-        if not api_key:
-            raise ConfigurationError(
-                "GOOGLE_API_KEY not found. Set it in your environment or .env file. "
-                "For testing without API keys, use the mock fixtures from tests/mocks/"
-            )
-
-        return ChatGoogleGenerativeAI(
-            model=self.config.main_model,
-            temperature=self.config.temperature_main,
-            google_api_key=api_key,
-        )
-
-    def _init_deepseek(self):
-        """Initialize Deepseek model (via OpenAI-compatible API)"""
-        try:
-            from langchain_openai import ChatOpenAI
-        except ImportError:
-            raise ConfigurationError(
-                "langchain-openai not installed. Install with: pip install langchain-openai"
-            )
-
-        api_key = os.getenv("DEEPSEEK_API_KEY")
-        base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
-
-        if not api_key:
-            raise ConfigurationError(
-                "DEEPSEEK_API_KEY not found. Set it in your environment or .env file. "
-                "For testing without API keys, use the mock fixtures from tests/mocks/"
-            )
-
-        return ChatOpenAI(
-            model=self.config.main_model,
-            temperature=self.config.temperature_main,
-            api_key=api_key,
-            base_url=base_url,
-        )
-
-    def _init_openrouter(self):
-        """Initialize Openrouter model (via OpenAI-compatible API)"""
-        try:
-            from langchain_openai import ChatOpenAI
-        except ImportError:
-            raise ConfigurationError(
-                "langchain-openai not installed. Install with: pip install langchain-openai"
-            )
-
-        api_key = os.getenv("OPENROUTER_API_KEY")
-
-        if not api_key:
-            raise ConfigurationError(
-                "OPENROUTER_API_KEY not found. Set it in your environment or .env file. "
-                "For testing without API keys, use the mock fixtures from tests/mocks/"
-            )
-
-        return ChatOpenAI(
-            model=self.config.main_model,
-            temperature=self.config.temperature_main,
-            api_key=api_key,
-            base_url="https://openrouter.ai/api/v1",
-            default_headers={
-                "HTTP-Referer": "https://github.com/abxba0/autonomai",
-                "X-Title": "AutonomAI Self-Optimizing System",
-            },
-        )
+        return detect_provider(model_name)
 
     def execute(
         self,

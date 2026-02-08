@@ -7,6 +7,9 @@ from .correction_detector import CorrectionDetector
 from .context_analyzer import ContextAnalyzer
 from .judge_model import JudgeModel, JudgeResponse
 from .golden_dataset import GoldenDataset, GoldenInteraction, RegressionTestResult
+from .cache_initializer import initialize_cache
+from .instruction_file_handler import InstructionFileHandler
+from .providers import detect_provider, initialize_provider
 
 # Phase 5: Multi-Modal Support
 from .multimodal_validator import (
@@ -49,6 +52,11 @@ __all__ = [
     "GoldenDataset",
     "GoldenInteraction",
     "RegressionTestResult",
+    # Extracted modules
+    "initialize_cache",
+    "InstructionFileHandler",
+    "detect_provider",
+    "initialize_provider",
     # Phase 5
     "MultiModalValidator",
     "VisionValidationResult",

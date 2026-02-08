@@ -4,10 +4,10 @@ import logging
 
 from ..models.config import SystemConfig, FailureLog, FailureEntry
 from ..models.version import VersionMetadata, InstructionVersion
-from ..storage.markdown_handler import MarkdownHandler
 from ..storage.version_control import VersionController
 from ..storage.distributed_state import DistributedStateManager, DistributedStateConfig
 from .golden_dataset import GoldenDataset
+from .instruction_file_handler import InstructionFileHandler
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class InstructionManager:
         self.archived_path = config.instructions_dir / config.archived_failures_file
 
         # Components
-        self.md_handler = MarkdownHandler()
+        self.file_handler = InstructionFileHandler(config)
         self.version_controller = VersionController(self.versions_dir, config)
 
         # Distributed state manager for multi-instance coordination
@@ -57,7 +57,7 @@ class InstructionManager:
 
     def _initialize(self):
         """Load or create instructions file"""
-        if self.instructions_path.exists():
+        if self.file_handler.file_exists():
             self._load_from_file()
         else:
             self._create_default()
@@ -89,54 +89,26 @@ This section evolves based on performance feedback.
 
     def _load_from_file(self):
         """Load instructions from file"""
-        content = self.md_handler.read_file(self.instructions_path)
+        base, appendix = self.file_handler.load_from_file()
 
-        if not content:
+        if base is None:
             self._create_default()
             return
 
-        # Simple parsing - look for sections
-        sections = content.split("\n---\n")
-
-        if len(sections) >= 2:
-            # First section is base instructions
-            self.base_instructions = sections[0].strip()
-
-            # Second section is dynamic appendix
-            self.dynamic_appendix = sections[1].strip()
+        self.base_instructions = base
+        self.dynamic_appendix = appendix
 
         # Get current version
         self.current_version = self.version_controller.get_latest_version_id()
 
     def _save_to_file(self):
         """Save current state to instructions.md"""
-        content = f"""# System Instructions
-
-Generated: {datetime.now().isoformat()}
-Current Version: {self.current_version or "N/A"}
-
----
-
-{self.base_instructions}
-
----
-
-{self.dynamic_appendix}
-
----
-
-{self.failure_log.to_markdown(self.config)}
-
----
-
-## Version History
-
-See `.versions/` directory for full history.
-Latest version: {self.current_version or "initial"}
-
-"""
-
-        self.md_handler.write_file(self.instructions_path, content)
+        self.file_handler.save_to_file(
+            self.base_instructions,
+            self.dynamic_appendix,
+            self.failure_log,
+            self.current_version,
+        )
 
     def get_full_instructions(self) -> str:
         """Get combined instructions for Main Model"""
@@ -295,9 +267,4 @@ Reason: {reason}
 
 """
 
-        # Append to file
-        existing = ""
-        if self.pending_review_path.exists():
-            existing = self.md_handler.read_file(self.pending_review_path)
-
-        self.md_handler.write_file(self.pending_review_path, content + existing)
+        self.file_handler.save_pending_review(content)
