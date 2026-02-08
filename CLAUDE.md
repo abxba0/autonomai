@@ -13,10 +13,11 @@ AutonomAI is a LangChain-based self-optimizing AI system that learns from failur
 pip install -r requirements.txt
 
 # Install with optional features
-pip install -e ".[web]"       # FastAPI, JWT, Redis
-pip install -e ".[local]"     # ChromaDB, sentence-transformers
-pip install -e ".[multimodal]" # Vision/audio processing
-pip install -e ".[all]"       # Everything
+pip install -e ".[web]"         # FastAPI, JWT, uvicorn
+pip install -e ".[distributed]" # Redis, Celery
+pip install -e ".[local]"       # ChromaDB, sentence-transformers
+pip install -e ".[multimodal]"  # Vision/audio processing
+pip install -e ".[all]"         # Everything
 
 # Run tests
 pytest tests/ -v                                    # All tests

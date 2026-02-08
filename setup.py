@@ -19,6 +19,7 @@ def read_requirements(filename):
 # Read base requirements
 base_requirements = read_requirements("base.txt")
 web_requirements = read_requirements("web.txt")
+distributed_requirements = read_requirements("distributed.txt")
 local_requirements = read_requirements("local.txt")
 multimodal_requirements = read_requirements("multimodal.txt")
 
@@ -31,9 +32,13 @@ setup(
     install_requires=base_requirements,
     extras_require={
         "web": web_requirements,
+        "distributed": distributed_requirements,
         "local": local_requirements,
         "multimodal": multimodal_requirements,
-        "all": web_requirements + local_requirements + multimodal_requirements,
+        "all": web_requirements
+        + distributed_requirements
+        + local_requirements
+        + multimodal_requirements,
     },
     python_requires=">=3.8",
     # Plugin system entry point

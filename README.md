@@ -128,8 +128,11 @@ pip install -e .
 Install additional features as needed:
 
 ```bash
-# For web API and security features (FastAPI, JWT, Redis)
+# For web API and security features (FastAPI, JWT, uvicorn)
 pip install -e ".[web]"
+
+# For distributed features (Redis, Celery)
+pip install -e ".[distributed]"
 
 # For local AI embeddings (ChromaDB, sentence-transformers)
 pip install -e ".[local]"
@@ -142,8 +145,9 @@ pip install -e ".[all]"
 ```
 
 **Modular Dependencies:**
-- **Base**: Core logic, cloud AI providers (Anthropic, OpenAI, Google), SQLAlchemy
-- **Web**: FastAPI, Uvicorn, JWT authentication, Redis, input sanitization
+- **Base**: Core logic, LangChain AI provider wrappers (Anthropic, OpenAI, Google), SQLAlchemy
+- **Web**: FastAPI, Uvicorn, JWT authentication, input sanitization
+- **Distributed**: Redis for caching/state, Celery for batch processing
 - **Local**: ChromaDB vector database, sentence-transformers for embeddings
 - **Multimodal**: Pillow, OpenCV, EasyOCR, PyDub, Transformers for vision/audio processing
 

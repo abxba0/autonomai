@@ -14,7 +14,7 @@ COPY requirements/ requirements/
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --no-cache-dir -e ".[web]"
+RUN pip install --no-cache-dir -e ".[web,distributed]"
 
 # Copy application code
 COPY . .
