@@ -137,8 +137,17 @@ Edit `.env` with your configuration:
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 OPENAI_API_KEY=your_openai_api_key_here
 
-# Security Configuration
-SECRET_KEY=your_secret_key_for_jwt_signing
+# Security Configuration (REQUIRED for authentication features)
+# Generate a secure JWT secret key:
+# python -c "import secrets; print(secrets.token_urlsafe(32))"
+JWT_SECRET_KEY=your_jwt_secret_key_here_change_in_production
+
+# User credentials for web API authentication (IMPORTANT: Change in production!)
+ADMIN_PASSWORD=your_admin_password_here
+ADMIN_EMAIL=admin@example.com
+API_CLIENT_PASSWORD=your_api_client_password_here
+API_CLIENT_EMAIL=api@example.com
+
 ENABLE_AUTHENTICATION=true
 ENABLE_RATE_LIMITING=true
 ENABLE_AUDIT_LOGGING=true
@@ -182,13 +191,24 @@ LOG_LEVEL=INFO  # Options: DEBUG, INFO, WARNING, ERROR
 - Leave blank to use mock models for testing
 
 #### Security Settings
-- **SECRET_KEY**: Generate a secure random key for JWT signing
+- **JWT_SECRET_KEY**: **REQUIRED** for JWT token signing in authentication features
   ```bash
-  python -c "import secrets; print(secrets.token_hex(32))"
+  # Generate a secure random key
+  python -c "import secrets; print(secrets.token_urlsafe(32))"
   ```
+  The system will fail at startup if this is not set when importing authentication modules.
+  
+- **ADMIN_PASSWORD**: **REQUIRED** password for admin user. System will fail at startup if not set.
+- **API_CLIENT_PASSWORD**: **REQUIRED** password for API client user. System will fail at startup if not set.
 - **ENABLE_AUTHENTICATION**: Enable JWT-based authentication (recommended for production)
 - **ENABLE_RATE_LIMITING**: Protect API from abuse
 - **ENABLE_AUDIT_LOGGING**: Track all system operations
+
+**Security Note:** The system now enforces secure defaults:
+- No hardcoded JWT secrets - must be set via environment variable
+- No hardcoded user passwords in production code
+- Fails loudly at startup if security is misconfigured
+- All authentication credentials are required - no insecure defaults
 
 #### Model Selection
 - **MAIN_MODEL_TYPE**: `mock` for testing, `anthropic` or `openai` for production
