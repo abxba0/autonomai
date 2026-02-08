@@ -13,11 +13,10 @@ from .multimodal_validator import (
     MultiModalValidator,
     VisionValidationResult,
     AudioValidationResult,
-    MockMultiModalValidator,
 )
 
 # Phase 6: Knowledge Graph
-from .rule_graph import RuleGraph, RuleNode, MockRuleGraph
+from .rule_graph import RuleGraph, RuleNode
 
 # Phase 7: Multi-Tenant Support
 from .tenant_manager import (
@@ -25,7 +24,6 @@ from .tenant_manager import (
     TenantConfig,
     TenantContext,
     TenantAwareDataFilter,
-    MockTenantManager,
 )
 
 __all__ = [
@@ -47,15 +45,12 @@ __all__ = [
     "MultiModalValidator",
     "VisionValidationResult",
     "AudioValidationResult",
-    "MockMultiModalValidator",
     # Phase 6
     "RuleGraph",
     "RuleNode",
-    "MockRuleGraph",
     # Phase 7
     "TenantManager",
     "TenantConfig",
     "TenantContext",
     "TenantAwareDataFilter",
-    "MockTenantManager",
 ]
