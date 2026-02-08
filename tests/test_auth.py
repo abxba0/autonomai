@@ -262,6 +262,21 @@ class TestUserProvider:
         with pytest.raises(ValueError):
             create_user("admin", "admin@test.com", Role.ADMIN)
 
+    def test_authenticate_with_api_key(self, mock_user_provider):
+        set_user_provider(mock_user_provider)
+        # The api_client user has an API key set up by MockUserProvider
+        api_client = mock_user_provider.get_user("api_client")
+        assert api_client is not None
+        assert api_client.api_key is not None
+        user = authenticate_with_api_key(api_client.api_key)
+        assert user is not None
+        assert user.username == "api_client"
+
+    def test_authenticate_with_invalid_api_key(self, mock_user_provider):
+        set_user_provider(mock_user_provider)
+        user = authenticate_with_api_key("invalid_api_key_value")
+        assert user is None
+
 
 class TestTokenModel:
     """Tests for Token and TokenData models."""
