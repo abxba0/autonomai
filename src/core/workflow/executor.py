@@ -182,7 +182,8 @@ Expected format:
                 "error": str(e),
             }
 
-    def _extract_json_from_response(self, response: str) -> Dict[str, Any]:
+    @staticmethod
+    def _extract_json_from_response(response: str) -> Dict[str, Any]:
         """Extract JSON from LLM response, handling markdown code blocks"""
         response = response.strip()
 

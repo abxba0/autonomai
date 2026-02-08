@@ -111,7 +111,8 @@ Return ONLY the JSON workflow plan, no additional text.
             print(f"Warning: Failed to generate workflow plan: {e}")
             return self._create_fallback_plan(goal)
 
-    def _extract_json_from_response(self, response: str) -> Dict[str, Any]:
+    @staticmethod
+    def _extract_json_from_response(response: str) -> Dict[str, Any]:
         """Extract JSON from LLM response, handling markdown code blocks"""
         response = response.strip()
 
@@ -128,8 +129,9 @@ Return ONLY the JSON workflow plan, no additional text.
             # If parsing fails, return None to trigger fallback
             return None
 
+    @staticmethod
     def _create_plan_from_json(
-        self, plan_data: Dict[str, Any], goal: str
+        plan_data: Dict[str, Any], goal: str
     ) -> WorkflowPlan:
         """Create a WorkflowPlan object from parsed JSON"""
         steps = []

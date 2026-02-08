@@ -452,26 +452,23 @@ def test_planner_json_extraction():
 
     from src.core.workflow.planner import WorkflowPlanner
 
-    # Create a minimal planner for JSON extraction testing
-    planner = WorkflowPlanner.__new__(WorkflowPlanner)
-
     # Plain JSON
-    result = planner._extract_json_from_response('{"steps": []}')
+    result = WorkflowPlanner._extract_json_from_response('{"steps": []}')
     assert result == {"steps": []}
     print("✓ Plain JSON parsing")
 
     # JSON with markdown code block
-    result = planner._extract_json_from_response('```json\n{"steps": []}\n```')
+    result = WorkflowPlanner._extract_json_from_response('```json\n{"steps": []}\n```')
     assert result == {"steps": []}
     print("✓ Markdown code block JSON parsing")
 
     # Generic code block
-    result = planner._extract_json_from_response('```\n{"steps": []}\n```')
+    result = WorkflowPlanner._extract_json_from_response('```\n{"steps": []}\n```')
     assert result == {"steps": []}
     print("✓ Generic code block JSON parsing")
 
     # Invalid JSON returns None
-    result = planner._extract_json_from_response("not json at all")
+    result = WorkflowPlanner._extract_json_from_response("not json at all")
     assert result is None
     print("✓ Invalid JSON returns None")
 
@@ -484,8 +481,6 @@ def test_planner_plan_from_json():
 
     from src.core.workflow.planner import WorkflowPlanner
 
-    planner = WorkflowPlanner.__new__(WorkflowPlanner)
-
     plan_data = {
         "name": "Test Workflow",
         "description": "A test",
@@ -495,7 +490,7 @@ def test_planner_plan_from_json():
         ],
     }
 
-    plan = planner._create_plan_from_json(plan_data, "Test goal")
+    plan = WorkflowPlanner._create_plan_from_json(plan_data, "Test goal")
 
     assert plan.name == "Test Workflow"
     assert plan.goal == "Test goal"
@@ -506,7 +501,7 @@ def test_planner_plan_from_json():
 
     # Test with minimal data
     minimal_data = {"steps": [{"id": "s1", "name": "Only Step"}]}
-    plan2 = planner._create_plan_from_json(minimal_data, "Minimal goal")
+    plan2 = WorkflowPlanner._create_plan_from_json(minimal_data, "Minimal goal")
     assert plan2.name == "Unnamed Workflow"
     assert len(plan2.steps) == 1
     print("✓ Plan with minimal data created correctly")
