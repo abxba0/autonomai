@@ -55,10 +55,10 @@ class WorkflowOrchestrator:
         config: Optional[SystemConfig] = None,
         instruction_manager: Optional[InstructionManager] = None,
         *,
-        planner: Optional[WorkflowPlanner] = None,
-        executor: Optional[WorkflowExecutor] = None,
-        control_flow: Optional[ControlFlowEngine] = None,
-        optimizer: Optional[StepOptimizer] = None,
+        planner_component: Optional[WorkflowPlanner] = None,
+        executor_component: Optional[WorkflowExecutor] = None,
+        control_flow_component: Optional[ControlFlowEngine] = None,
+        optimizer_component: Optional[StepOptimizer] = None,
     ):
         self.config = config or SystemConfig()
         self.base_instruction_manager = instruction_manager or InstructionManager(
@@ -88,17 +88,20 @@ class WorkflowOrchestrator:
         self.critic = CriticModel(self.config, self.base_instruction_manager)
 
         # Accept injected subcomponents or create defaults
-        self._optimizer = optimizer or StepOptimizer(
+        self._optimizer = optimizer_component or StepOptimizer(
             critic_model=self.critic,
             workflow_instruction_manager=self.workflow_instruction_manager,
         )
 
-        self._control_flow = control_flow or ControlFlowEngine(
-            active_workflows=self.active_workflows,
-            execute_step_by_type_fn=None,  # Wired below
-        )
+        if control_flow_component is not None:
+            self._control_flow = control_flow_component
+        else:
+            self._control_flow = ControlFlowEngine(
+                active_workflows=self.active_workflows,
+                execute_step_by_type_fn=None,  # Wired below
+            )
 
-        self._executor_component = executor or WorkflowExecutor(
+        self._executor_component = executor_component or WorkflowExecutor(
             workflow_instruction_manager=self.workflow_instruction_manager,
             executor_model=self.executor,
             base_instruction_manager=self.base_instruction_manager,
@@ -107,12 +110,14 @@ class WorkflowOrchestrator:
             execute_workflow_fn=self.execute_workflow,
         )
 
-        # Wire up the control flow's step execution callback
-        self._control_flow._execute_step_by_type = (
-            self._executor_component.execute_step_by_type
-        )
+        # Wire up the control flow's step execution callback only for
+        # internally-created control flow engines (not injected ones)
+        if control_flow_component is None:
+            self._control_flow._execute_step_by_type = (
+                self._executor_component.execute_step_by_type
+            )
 
-        self._planner_component = planner or WorkflowPlanner(
+        self._planner_component = planner_component or WorkflowPlanner(
             workflow_instruction_manager=self.workflow_instruction_manager,
             planner_model=self.planner,
             base_instruction_manager=self.base_instruction_manager,
