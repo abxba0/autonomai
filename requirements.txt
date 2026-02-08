@@ -1,3 +1,12 @@
-# Core dependencies only - for minimal installation
-# For additional features, install with: pip install -e ".[web,local]" or pip install -e ".[all]"
--r requirements/base.txt
+# Core runtime dependencies - for minimal installation
+# For additional features, install with: pip install -e ".[web,distributed]" or pip install -e ".[all]"
+# For development, also install: pip install -r requirements/dev.txt
+langchain>=0.1.0
+langchain-anthropic>=0.0.1
+langchain-openai>=0.0.1
+langchain-google-genai>=0.0.5
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+sqlalchemy>=2.0.0
+requests>=2.31.0
+psutil>=7.0.0
