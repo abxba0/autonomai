@@ -48,6 +48,9 @@ class SelfOptimizingSystem:
 
     def __init__(self, config: Optional[SystemConfig] = None):
         self.config = config or SystemConfig()
+        
+        # Validate security configuration on startup
+        self._validate_security_config()
 
         # Initialize distributed state manager if enabled
         self.state_manager = None
@@ -77,6 +80,22 @@ class SelfOptimizingSystem:
 
         # Track pending optimizations
         self.pending_optimizations = []
+    
+    def _validate_security_config(self):
+        """Validate security configuration on startup"""
+        import os
+        import warnings
+        
+        # Check for JWT_SECRET_KEY
+        jwt_secret = os.environ.get("JWT_SECRET_KEY")
+        if not jwt_secret:
+            warnings.warn(
+                "JWT_SECRET_KEY environment variable is not set. "
+                "Authentication features will not work. "
+                "Set JWT_SECRET_KEY with a secure random key for production use.",
+                RuntimeWarning,
+                stacklevel=2
+            )
 
     def add_validator(self, validator):
         """Add a validator to the validation pipeline"""

@@ -3,17 +3,26 @@ Authentication and authorization system for the Self-Optimizing Instruction Libr
 """
 
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Protocol
 from enum import Enum
+from abc import ABC, abstractmethod
 import hashlib
 import secrets
 import jwt
+import os
 from pydantic import BaseModel, Field
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 # Security configuration
-SECRET_KEY = "your-secret-key-change-in-production"  # Should be in environment variable
+SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError(
+        "JWT_SECRET_KEY environment variable is required. "
+        "Please set a secure random key for JWT token signing. "
+        "Generate one with: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+    )
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7
@@ -121,42 +130,53 @@ class TokenData(BaseModel):
     permissions: List[Permission] = Field(default_factory=list)
 
 
-# Mock user database (in production, use a real database)
-_users_db: Dict[str, User] = {}
+# Abstract User Provider Interface
+class UserProvider(ABC):
+    """Abstract interface for user authentication and management.
+    
+    Implementations must be provided by the deployment to handle
+    user lookup, password verification, and API key validation.
+    """
+    
+    @abstractmethod
+    def get_user(self, username: str) -> Optional[User]:
+        """Get user by username"""
+        pass
+    
+    @abstractmethod
+    def authenticate_user(self, username: str, password: str) -> Optional[User]:
+        """Authenticate user with username and password"""
+        pass
+    
+    @abstractmethod
+    def authenticate_with_api_key(self, api_key: str) -> Optional[User]:
+        """Authenticate user with API key"""
+        pass
+    
+    @abstractmethod
+    def create_user(self, username: str, email: str, role: Role) -> User:
+        """Create new user"""
+        pass
 
-# Demo passwords (in production, use proper password hashing)
-_demo_passwords: Dict[str, str] = {
-    "admin": "password123",
-    "api_client": "api_password123",
-}
+
+# Global user provider instance (must be set by the application)
+_user_provider: Optional[UserProvider] = None
 
 
-# Initialize with default admin user
-def _initialize_default_users():
-    """Initialize default users for testing"""
-    admin_user = User(
-        id="admin-001",
-        username="admin",
-        email="admin@example.com",
-        role=Role.ADMIN,
-        permissions=ROLE_PERMISSIONS[Role.ADMIN],
-        is_active=True,
-    )
-    _users_db[admin_user.username] = admin_user
+def set_user_provider(provider: UserProvider) -> None:
+    """Set the user provider implementation"""
+    global _user_provider
+    _user_provider = provider
 
-    # Create API client user
-    api_key = generate_api_key()
-    api_client = User(
-        id="api-001",
-        username="api_client",
-        email="api@example.com",
-        role=Role.API_CLIENT,
-        permissions=ROLE_PERMISSIONS[Role.API_CLIENT],
-        api_key=api_key,
-        api_key_hash=hash_api_key(api_key),
-        is_active=True,
-    )
-    _users_db[api_client.username] = api_client
+
+def get_user_provider() -> UserProvider:
+    """Get the current user provider"""
+    if _user_provider is None:
+        raise RuntimeError(
+            "User provider not configured. Please call set_user_provider() "
+            "with a UserProvider implementation before using authentication."
+        )
+    return _user_provider
 
 
 def generate_api_key() -> str:
@@ -233,48 +253,28 @@ def verify_token(token: str) -> TokenData:
 
 def authenticate_user(username: str, password: str) -> Optional[User]:
     """Authenticate user with username and password"""
-    # In production, use proper password hashing and database lookup
-    user = _users_db.get(username)
-    if not user or not user.is_active:
-        return None
-
-    # Verify password against demo passwords
-    expected_password = _demo_passwords.get(username)
-    if expected_password and password == expected_password:
-        return user
-    return None
+    provider = get_user_provider()
+    return provider.authenticate_user(username, password)
 
 
 def authenticate_with_api_key(api_key: str) -> Optional[User]:
     """Authenticate user with API key"""
-    for user in _users_db.values():
-        if user.api_key_hash and verify_api_key(api_key, user.api_key_hash):
-            return user
-    return None
+    provider = get_user_provider()
+    return provider.authenticate_with_api_key(api_key)
 
 
 def get_user(username: Optional[str]) -> Optional[User]:
     """Get user by username"""
     if username is None:
         return None
-    return _users_db.get(username)
+    provider = get_user_provider()
+    return provider.get_user(username)
 
 
 def create_user(username: str, email: str, role: Role) -> User:
     """Create new user"""
-    if username in _users_db:
-        raise ValueError(f"User {username} already exists")
-
-    user = User(
-        id=f"user-{len(_users_db) + 1:03d}",
-        username=username,
-        email=email,
-        role=role,
-        permissions=ROLE_PERMISSIONS[role],
-        is_active=True,
-    )
-    _users_db[username] = user
-    return user
+    provider = get_user_provider()
+    return provider.create_user(username, email, role)
 
 
 # FastAPI dependencies
@@ -350,7 +350,3 @@ def require_role(role: Role):
         return current_user
 
     return role_dependency
-
-
-# Initialize default users
-_initialize_default_users()
