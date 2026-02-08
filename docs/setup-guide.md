@@ -198,8 +198,8 @@ LOG_LEVEL=INFO  # Options: DEBUG, INFO, WARNING, ERROR
   ```
   The system will fail at startup if this is not set when importing authentication modules.
   
-- **ADMIN_PASSWORD**: Password for admin user (default: warns at startup)
-- **API_CLIENT_PASSWORD**: Password for API client user (default: warns at startup)
+- **ADMIN_PASSWORD**: **REQUIRED** password for admin user. System will fail at startup if not set.
+- **API_CLIENT_PASSWORD**: **REQUIRED** password for API client user. System will fail at startup if not set.
 - **ENABLE_AUTHENTICATION**: Enable JWT-based authentication (recommended for production)
 - **ENABLE_RATE_LIMITING**: Protect API from abuse
 - **ENABLE_AUDIT_LOGGING**: Track all system operations
@@ -208,6 +208,7 @@ LOG_LEVEL=INFO  # Options: DEBUG, INFO, WARNING, ERROR
 - No hardcoded JWT secrets - must be set via environment variable
 - No hardcoded user passwords in production code
 - Fails loudly at startup if security is misconfigured
+- All authentication credentials are required - no insecure defaults
 
 #### Model Selection
 - **MAIN_MODEL_TYPE**: `mock` for testing, `anthropic` or `openai` for production

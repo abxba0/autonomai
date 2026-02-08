@@ -60,7 +60,9 @@ def mock_tenant_manager():
 
 
 # ==================== Authentication Test Fixtures ====================
-# Demo credentials for testing (DO NOT use in production)
+# Demo credentials for testing ONLY
+# WARNING: These are INSECURE and must NEVER be used in production!
+# They exist solely for automated testing purposes.
 
 DEMO_PASSWORDS = {
     "admin": "password123",

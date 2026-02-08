@@ -118,9 +118,6 @@ class APIUserProvider(UserProvider):
     with secure password hashing (e.g., bcrypt, argon2).
     """
     
-    # Default password constant
-    DEFAULT_PASSWORD = "CHANGE_ME_IN_PRODUCTION"
-    
     def __init__(self):
         self.users_db = {}
         # In production, passwords should be loaded from environment or secure storage
@@ -159,7 +156,9 @@ class APIUserProvider(UserProvider):
         )
         self.users_db[admin_user.username] = admin_user
         
-        # Create API client user
+        # Create API client user with generated key
+        # Note: API key should be retrieved via secure administrative endpoint
+        # or key management system in production
         api_key = generate_api_key()
         api_client = User(
             id="api-001",
@@ -172,10 +171,6 @@ class APIUserProvider(UserProvider):
             is_active=True,
         )
         self.users_db[api_client.username] = api_client
-        
-        # Store API key for initial distribution (should be retrieved via secure channel)
-        # Note: In production, use a secure key management system or one-time retrieval endpoint
-        self._api_client_key = api_key
     
     def get_user(self, username: str):
         return self.users_db.get(username)
