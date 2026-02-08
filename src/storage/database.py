@@ -3,7 +3,7 @@ Database backend for production use
 """
 
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import (
     create_engine,
     Column,
@@ -207,6 +207,68 @@ class DBUsageRecord(Base):
         Index("idx_tenant_timestamp", "tenant_id", "timestamp"),
         Index("idx_tenant_period", "tenant_id", "period_start"),
     )
+
+
+class DBConsentRecord(Base):
+    """Database model for GDPR consent records"""
+
+    __tablename__ = "gdpr_consent_records"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String, nullable=False, index=True)
+    purpose = Column(String, nullable=False)
+    granted = Column(Boolean, nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    version = Column(String, default="1.0")
+    method = Column(String, default="web")
+    ip_address = Column(String, nullable=True)
+    user_agent = Column(String, nullable=True)
+
+    __table_args__ = (
+        Index("idx_consent_user_purpose", "user_id", "purpose"),
+    )
+
+
+class DBDataAccessRequest(Base):
+    """Database model for GDPR data access requests"""
+
+    __tablename__ = "gdpr_data_access_requests"
+
+    request_id = Column(String, primary_key=True)
+    user_id = Column(String, nullable=False, index=True)
+    requested_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+    status = Column(String, default="pending")
+    format = Column(String, default="json")
+
+
+class DBDataDeletionRequest(Base):
+    """Database model for GDPR data deletion requests"""
+
+    __tablename__ = "gdpr_data_deletion_requests"
+
+    request_id = Column(String, primary_key=True)
+    user_id = Column(String, nullable=False, index=True)
+    requested_at = Column(DateTime, default=datetime.utcnow)
+    scheduled_for = Column(DateTime, nullable=False)
+    completed_at = Column(DateTime, nullable=True)
+    status = Column(String, default="pending")
+    reason = Column(Text, nullable=True)
+
+
+class DBUserPersonalData(Base):
+    """Database model for user personal data (GDPR-tracked)"""
+
+    __tablename__ = "gdpr_user_personal_data"
+
+    user_id = Column(String, primary_key=True)
+    username = Column(String, nullable=True)
+    email = Column(String, nullable=True)
+    role = Column(String, default="viewer")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_login = Column(DateTime, nullable=True)
+    is_active = Column(Boolean, default=True)
+    metadata_json = Column(JSON, nullable=True)
 
 
 class DatabaseManager:
@@ -841,3 +903,394 @@ class DatabaseManager:
             period_start=db_usage.period_start,
             period_end=db_usage.period_end,
         )
+
+    # GDPR Compliance Operations
+
+    def save_consent_record(
+        self,
+        user_id: str,
+        purpose: str,
+        granted: bool,
+        timestamp: Optional[datetime] = None,
+        version: str = "1.0",
+        method: str = "web",
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None,
+    ) -> bool:
+        """Save a consent record to the database"""
+        try:
+            with self.get_session() as session:
+                record = DBConsentRecord(
+                    user_id=user_id,
+                    purpose=purpose,
+                    granted=granted,
+                    timestamp=timestamp or datetime.utcnow(),
+                    version=version,
+                    method=method,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                )
+                session.add(record)
+                session.commit()
+                return True
+        except Exception as e:
+            print(f"Error saving consent record: {e}")
+            return False
+
+    def get_consent_records(self, user_id: str) -> List[Dict[str, Any]]:
+        """Get all consent records for a user"""
+        with self.get_session() as session:
+            records = (
+                session.query(DBConsentRecord)
+                .filter_by(user_id=user_id)
+                .order_by(DBConsentRecord.timestamp.asc())
+                .all()
+            )
+            return [
+                {
+                    "user_id": r.user_id,
+                    "purpose": r.purpose,
+                    "granted": r.granted,
+                    "timestamp": r.timestamp.isoformat(),
+                    "version": r.version,
+                    "method": r.method,
+                    "ip_address": r.ip_address,
+                    "user_agent": r.user_agent,
+                }
+                for r in records
+            ]
+
+    def get_latest_consent(self, user_id: str, purpose: str) -> Optional[Dict[str, Any]]:
+        """Get the most recent consent record for a user and purpose"""
+        with self.get_session() as session:
+            record = (
+                session.query(DBConsentRecord)
+                .filter_by(user_id=user_id, purpose=purpose)
+                .order_by(DBConsentRecord.timestamp.desc())
+                .first()
+            )
+            if record:
+                return {
+                    "user_id": record.user_id,
+                    "purpose": record.purpose,
+                    "granted": record.granted,
+                    "timestamp": record.timestamp.isoformat(),
+                    "version": record.version,
+                }
+            return None
+
+    def delete_consent_records(self, user_id: str) -> bool:
+        """Delete all consent records for a user"""
+        try:
+            with self.get_session() as session:
+                session.query(DBConsentRecord).filter_by(user_id=user_id).delete(
+                    synchronize_session=False
+                )
+                session.commit()
+                return True
+        except Exception as e:
+            print(f"Error deleting consent records: {e}")
+            return False
+
+    def save_data_access_request(
+        self, request_id: str, user_id: str, format: str = "json"
+    ) -> bool:
+        """Save a data access request"""
+        try:
+            with self.get_session() as session:
+                record = DBDataAccessRequest(
+                    request_id=request_id,
+                    user_id=user_id,
+                    format=format,
+                    status="pending",
+                )
+                session.add(record)
+                session.commit()
+                return True
+        except Exception as e:
+            print(f"Error saving data access request: {e}")
+            return False
+
+    def update_data_access_request(self, request_id: str, status: str) -> bool:
+        """Update the status of a data access request"""
+        try:
+            with self.get_session() as session:
+                record = (
+                    session.query(DBDataAccessRequest)
+                    .filter_by(request_id=request_id)
+                    .first()
+                )
+                if record:
+                    record.status = status
+                    if status == "completed":
+                        record.completed_at = datetime.utcnow()
+                    session.commit()
+                    return True
+        except Exception as e:
+            print(f"Error updating data access request: {e}")
+        return False
+
+    def save_data_deletion_request(
+        self,
+        request_id: str,
+        user_id: str,
+        scheduled_for: datetime,
+        reason: Optional[str] = None,
+    ) -> bool:
+        """Save a data deletion request"""
+        try:
+            with self.get_session() as session:
+                record = DBDataDeletionRequest(
+                    request_id=request_id,
+                    user_id=user_id,
+                    scheduled_for=scheduled_for,
+                    status="grace_period",
+                    reason=reason,
+                )
+                session.add(record)
+                session.commit()
+                return True
+        except Exception as e:
+            print(f"Error saving data deletion request: {e}")
+            return False
+
+    def update_data_deletion_request(self, request_id: str, status: str) -> bool:
+        """Update the status of a data deletion request"""
+        try:
+            with self.get_session() as session:
+                record = (
+                    session.query(DBDataDeletionRequest)
+                    .filter_by(request_id=request_id)
+                    .first()
+                )
+                if record:
+                    record.status = status
+                    if status == "completed":
+                        record.completed_at = datetime.utcnow()
+                    session.commit()
+                    return True
+        except Exception as e:
+            print(f"Error updating data deletion request: {e}")
+        return False
+
+    def get_data_deletion_request(self, request_id: str) -> Optional[Dict[str, Any]]:
+        """Get a data deletion request by ID"""
+        with self.get_session() as session:
+            record = (
+                session.query(DBDataDeletionRequest)
+                .filter_by(request_id=request_id)
+                .first()
+            )
+            if record:
+                return {
+                    "request_id": record.request_id,
+                    "user_id": record.user_id,
+                    "requested_at": record.requested_at.isoformat() if record.requested_at else None,
+                    "scheduled_for": record.scheduled_for.isoformat() if record.scheduled_for else None,
+                    "completed_at": record.completed_at.isoformat() if record.completed_at else None,
+                    "status": record.status,
+                    "reason": record.reason,
+                }
+            return None
+
+    def get_pending_deletion_requests(self) -> List[Dict[str, Any]]:
+        """Get all pending deletion requests past their grace period"""
+        with self.get_session() as session:
+            records = (
+                session.query(DBDataDeletionRequest)
+                .filter_by(status="grace_period")
+                .filter(DBDataDeletionRequest.scheduled_for <= datetime.utcnow())
+                .all()
+            )
+            return [
+                {
+                    "request_id": r.request_id,
+                    "user_id": r.user_id,
+                    "scheduled_for": r.scheduled_for.isoformat(),
+                    "reason": r.reason,
+                }
+                for r in records
+            ]
+
+    # User personal data operations
+
+    def save_user_personal_data(
+        self,
+        user_id: str,
+        username: Optional[str] = None,
+        email: Optional[str] = None,
+        role: str = "viewer",
+        metadata_json: Optional[Dict] = None,
+    ) -> bool:
+        """Save or update user personal data"""
+        try:
+            with self.get_session() as session:
+                existing = (
+                    session.query(DBUserPersonalData)
+                    .filter_by(user_id=user_id)
+                    .first()
+                )
+                if existing:
+                    if username is not None:
+                        existing.username = username
+                    if email is not None:
+                        existing.email = email
+                    existing.role = role
+                    existing.last_login = datetime.utcnow()
+                    if metadata_json is not None:
+                        existing.metadata_json = metadata_json
+                else:
+                    record = DBUserPersonalData(
+                        user_id=user_id,
+                        username=username,
+                        email=email,
+                        role=role,
+                        metadata_json=metadata_json,
+                    )
+                    session.add(record)
+                session.commit()
+                return True
+        except Exception as e:
+            print(f"Error saving user personal data: {e}")
+            return False
+
+    def get_user_personal_data(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Get user personal data"""
+        with self.get_session() as session:
+            record = (
+                session.query(DBUserPersonalData)
+                .filter_by(user_id=user_id)
+                .first()
+            )
+            if record:
+                return {
+                    "user_id": record.user_id,
+                    "username": record.username,
+                    "email": record.email,
+                    "role": record.role,
+                    "created_at": record.created_at.isoformat() if record.created_at else None,
+                    "last_login": record.last_login.isoformat() if record.last_login else None,
+                    "is_active": record.is_active,
+                    "metadata": record.metadata_json,
+                }
+            return None
+
+    def update_user_personal_field(self, user_id: str, field: str, value: str) -> bool:
+        """Update a specific field of user personal data"""
+        allowed_fields = {"email", "username"}
+        if field not in allowed_fields:
+            return False
+        try:
+            with self.get_session() as session:
+                record = (
+                    session.query(DBUserPersonalData)
+                    .filter_by(user_id=user_id)
+                    .first()
+                )
+                if record:
+                    setattr(record, field, value)
+                    session.commit()
+                    return True
+        except Exception as e:
+            print(f"Error updating user personal field: {e}")
+        return False
+
+    def deactivate_user(self, user_id: str) -> bool:
+        """Deactivate a user account"""
+        try:
+            with self.get_session() as session:
+                record = (
+                    session.query(DBUserPersonalData)
+                    .filter_by(user_id=user_id)
+                    .first()
+                )
+                if record:
+                    record.is_active = False
+                    session.commit()
+                    return True
+        except Exception as e:
+            print(f"Error deactivating user: {e}")
+        return False
+
+    def delete_user_personal_data(self, user_id: str) -> bool:
+        """Hard-delete all personal data for a user"""
+        try:
+            with self.get_session() as session:
+                session.query(DBUserPersonalData).filter_by(user_id=user_id).delete(
+                    synchronize_session=False
+                )
+                session.query(DBConsentRecord).filter_by(user_id=user_id).delete(
+                    synchronize_session=False
+                )
+                # Delete access requests for this user
+                session.query(DBDataAccessRequest).filter_by(user_id=user_id).delete(
+                    synchronize_session=False
+                )
+                # Delete usage records for this user (if tenant_id matches user_id)
+                session.query(DBUsageRecord).filter_by(tenant_id=user_id).delete(
+                    synchronize_session=False
+                )
+                session.commit()
+                return True
+        except Exception as e:
+            print(f"Error deleting user personal data: {e}")
+            return False
+
+    def get_user_usage_data(self, user_id: str, limit: int = 100) -> List[Dict[str, Any]]:
+        """Get usage data for a user (for GDPR data export)"""
+        with self.get_session() as session:
+            records = (
+                session.query(DBUsageRecord)
+                .filter_by(tenant_id=user_id)
+                .order_by(DBUsageRecord.timestamp.desc())
+                .limit(limit)
+                .all()
+            )
+            return [
+                {
+                    "timestamp": r.timestamp.isoformat() if r.timestamp else None,
+                    "request_count": r.request_count,
+                    "tokens_used": r.tokens_used,
+                    "model_used": r.model_used,
+                    "endpoint": r.endpoint,
+                    "operation_type": r.operation_type,
+                }
+                for r in records
+            ]
+
+    def cleanup_expired_gdpr_data(self, retention_days: int = 90) -> Dict[str, int]:
+        """Clean up expired GDPR data based on retention policy"""
+        cutoff = datetime.utcnow() - timedelta(days=retention_days)
+        deleted_counts = {
+            "completed_access_requests": 0,
+            "completed_deletion_requests": 0,
+        }
+        try:
+            with self.get_session() as session:
+                # Clean up completed access requests older than retention period
+                count = (
+                    session.query(DBDataAccessRequest)
+                    .filter(
+                        DBDataAccessRequest.status == "completed",
+                        DBDataAccessRequest.completed_at < cutoff,
+                    )
+                    .delete(synchronize_session=False)
+                )
+                deleted_counts["completed_access_requests"] = count
+
+                # Clean up completed deletion requests older than retention period
+                count = (
+                    session.query(DBDataDeletionRequest)
+                    .filter(
+                        DBDataDeletionRequest.status == "completed",
+                        DBDataDeletionRequest.completed_at < cutoff,
+                    )
+                    .delete(synchronize_session=False)
+                )
+                deleted_counts["completed_deletion_requests"] = count
+
+                session.commit()
+        except Exception as e:
+            print(f"Error cleaning up GDPR data: {e}")
+
+        return deleted_counts

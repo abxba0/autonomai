@@ -290,6 +290,35 @@ class AuditLogger:
 
         return events
 
+    def get_user_logs(self, user_id: str, limit: int = 500) -> List[Dict[str, Any]]:
+        """Get all audit log entries for a specific user (for GDPR data export)"""
+        events = self.get_events(user_id=user_id, limit=limit)
+        return [e.to_dict() for e in events]
+
+    def anonymize_user_logs(self, user_id: str) -> bool:
+        """Anonymize audit logs for a user (replace user_id with anonymized reference)"""
+        if not self.database_file:
+            return False
+
+        anonymized_id = f"deleted_{user_id[:8]}"
+        try:
+            with self._get_db_connection() as conn:
+                if conn:
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        """
+                        UPDATE audit_events
+                        SET user_id = ?, username = ?
+                        WHERE user_id = ?
+                        """,
+                        (anonymized_id, "deleted_user", user_id),
+                    )
+                    conn.commit()
+                    return True
+        except Exception as e:
+            print(f"Error anonymizing user logs: {e}")
+        return False
+
     def get_statistics(
         self, start_time: Optional[datetime] = None, end_time: Optional[datetime] = None
     ) -> Dict[str, Any]:
