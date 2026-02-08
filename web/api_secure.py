@@ -97,6 +97,120 @@ audit_logger = AuditLogger(
 security_monitor = SecurityMonitor(audit_logger)
 
 
+# User Provider Implementation for API
+from src.security.auth import (
+    UserProvider,
+    set_user_provider,
+    ROLE_PERMISSIONS,
+    generate_api_key,
+    hash_api_key,
+    verify_api_key,
+)
+
+
+class APIUserProvider(UserProvider):
+    """
+    In-memory user provider for API authentication.
+    
+    WARNING: This is a simple implementation for demonstration.
+    For production, implement a proper database-backed user provider
+    with secure password hashing (e.g., bcrypt, argon2).
+    """
+    
+    def __init__(self):
+        self.users_db = {}
+        # In production, passwords should be loaded from environment or secure storage
+        # and hashed with bcrypt/argon2
+        self.passwords = {
+            "admin": os.getenv("ADMIN_PASSWORD", "CHANGE_ME_IN_PRODUCTION"),
+            "api_client": os.getenv("API_CLIENT_PASSWORD", "CHANGE_ME_IN_PRODUCTION"),
+        }
+        self._initialize_users()
+    
+    def _initialize_users(self):
+        """Initialize default users"""
+        # Create admin user
+        admin_user = User(
+            id="admin-001",
+            username="admin",
+            email=os.getenv("ADMIN_EMAIL", "admin@example.com"),
+            role=Role.ADMIN,
+            permissions=ROLE_PERMISSIONS[Role.ADMIN],
+            is_active=True,
+        )
+        self.users_db[admin_user.username] = admin_user
+        
+        # Create API client user
+        api_key = generate_api_key()
+        api_client = User(
+            id="api-001",
+            username="api_client",
+            email=os.getenv("API_CLIENT_EMAIL", "api@example.com"),
+            role=Role.API_CLIENT,
+            permissions=ROLE_PERMISSIONS[Role.API_CLIENT],
+            api_key=api_key,
+            api_key_hash=hash_api_key(api_key),
+            is_active=True,
+        )
+        self.users_db[api_client.username] = api_client
+        
+        # Log the API key for first setup (in production, provide via secure channel)
+        if os.getenv("DEBUG", "false").lower() == "true":
+            print(f"[SETUP] API Client Key: {api_key}")
+    
+    def get_user(self, username: str):
+        return self.users_db.get(username)
+    
+    def authenticate_user(self, username: str, password: str):
+        user = self.users_db.get(username)
+        if not user or not user.is_active:
+            return None
+        
+        # In production, use proper password hashing (bcrypt.checkpw)
+        expected_password = self.passwords.get(username)
+        if expected_password and password == expected_password:
+            return user
+        return None
+    
+    def authenticate_with_api_key(self, api_key: str):
+        for user in self.users_db.values():
+            if user.api_key_hash and verify_api_key(api_key, user.api_key_hash):
+                return user
+        return None
+    
+    def create_user(self, username: str, email: str, role: Role):
+        if username in self.users_db:
+            raise ValueError(f"User {username} already exists")
+        
+        user = User(
+            id=f"user-{len(self.users_db) + 1:03d}",
+            username=username,
+            email=email,
+            role=role,
+            permissions=ROLE_PERMISSIONS[role],
+            is_active=True,
+        )
+        self.users_db[username] = user
+        return user
+
+
+# Initialize user provider on startup
+@app.on_event("startup")
+async def startup_event():
+    """Initialize authentication system on startup"""
+    user_provider = APIUserProvider()
+    set_user_provider(user_provider)
+    
+    # Warn about insecure defaults in production
+    if os.getenv("ADMIN_PASSWORD") == "CHANGE_ME_IN_PRODUCTION" or not os.getenv("ADMIN_PASSWORD"):
+        print("\n" + "=" * 70)
+        print("⚠️  WARNING: Using default admin password!")
+        print("   Set ADMIN_PASSWORD environment variable in production")
+        print("=" * 70 + "\n")
+    
+    print("✓ Authentication system initialized")
+
+
 # Pydantic models for API requests/responses
 class LoginRequest(BaseModel):
     username: str = Field(..., min_length=1, max_length=50)
