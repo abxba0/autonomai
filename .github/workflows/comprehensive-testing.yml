@@ -44,11 +44,19 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest pytest-cov pytest-asyncio pytest-xdist
+        pip install -e ".[web,test]"
+        pip install pytest pytest-cov pytest-asyncio pytest-xdist hypothesis bleach
     
     - name: Run unit tests with coverage
+      env:
+        JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY || 'test-secret-key-for-ci-only-not-for-production-use' }}
       run: |
         pytest tests/test_unit_core_comprehensive.py \
+          tests/test_version_control.py \
+          tests/test_security_validation.py \
+          tests/test_auth.py \
+          tests/test_rate_limiting.py \
+          tests/test_validator_hypothesis.py \
           -v \
           --cov=src \
           --cov-report=term-missing \
