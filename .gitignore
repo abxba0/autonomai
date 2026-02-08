@@ -27,6 +27,9 @@ tests/regression_reports/
 tests/data/performance_baseline.json
 tests/reports/
 
+# Hypothesis
+.hypothesis/
+
 # Virtual Environments
 venv/
 env/
