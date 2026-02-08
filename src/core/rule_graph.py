@@ -627,15 +627,3 @@ class RuleGraph:
         
         self.save()
         return stats
-
-
-class MockRuleGraph(RuleGraph):
-    """Mock rule graph for testing without actual storage"""
-
-    def save(self):
-        """Override save to do nothing in tests"""
-        pass
-
-    def load(self):
-        """Override load to do nothing in tests"""
-        pass

@@ -14,16 +14,19 @@ from src.core.multimodal_validator import (
     MultiModalValidator,
     VisionValidationResult,
     AudioValidationResult,
-    MockMultiModalValidator,
 )
-from src.core.rule_graph import RuleGraph, RuleNode, MockRuleGraph
+from src.core.rule_graph import RuleGraph, RuleNode
 from src.core.tenant_manager import (
     TenantManager,
     TenantConfig,
     TenantContext,
-    MockTenantManager,
 )
 from src.core.golden_dataset import GoldenInteraction, GoldenDataset
+from tests.mocks.models import (
+    MockMultiModalValidator,
+    MockRuleGraph,
+    MockTenantManager,
+)
 
 
 # ============================================================================

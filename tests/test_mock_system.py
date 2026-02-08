@@ -5,6 +5,7 @@ Test the Self-Optimizing System with mock models
 
 import sys
 import os
+from unittest.mock import patch
 
 # Add src directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -15,44 +16,55 @@ def test_mock_system():
     print("Testing Self-Optimizing System with mock models...")
 
     try:
-        # Import the main system
+        # Import mock models and main system
+        from tests.mocks.models import MockModel, MockCriticModel, MockJudgeModel
         from src import SelfOptimizingSystem
+        from src.models.config import SystemConfig
+        
+        # Patch the model initialization to use mocks
+        with patch('src.core.main_model.MainModel._initialize_model') as mock_main:
+            with patch('src.core.critic_model.CriticModel._initialize_model') as mock_critic:
+                with patch('src.core.judge_model.JudgeModel._initialize_model') as mock_judge:
+                    # Set up mock models
+                    mock_main.return_value = MockModel("test-model", 0.7)
+                    mock_critic.return_value = MockCriticModel("test-critic", 0.3)
+                    mock_judge.return_value = MockJudgeModel("test-judge", 0.3)
+                    
+                    # Create system instance with mock models
+                    system = SelfOptimizingSystem()
+                    print("✓ SelfOptimizingSystem created")
 
-        # Create system instance with mock models
-        system = SelfOptimizingSystem()
-        print("✓ SelfOptimizingSystem created")
+                    # Test getting instructions
+                    instructions = system.get_current_instructions()
+                    print(f"✓ Got instructions: {len(instructions)} chars")
 
-        # Test getting instructions
-        instructions = system.get_current_instructions()
-        print(f"✓ Got instructions: {len(instructions)} chars")
+                    # Test execution with a simple query
+                    test_query = "What is 2+2?"
+                    print(f"\nExecuting query: {test_query}")
+                    result = system.execute(test_query)
+                    print("✓ Execution completed")
+                    print(f"  Output: {result['output'][:100]}...")
+                    print(f"  Validation passed: {result['validation_passed']}")
 
-        # Test execution with a simple query
-        test_query = "What is 2+2?"
-        print(f"\nExecuting query: {test_query}")
-        result = system.execute(test_query)
-        print("✓ Execution completed")
-        print(f"  Output: {result['output'][:100]}...")
-        print(f"  Validation passed: {result['validation_passed']}")
+                    # Test validation
+                    print("\nTesting validation...")
+                    validation_result = system.validate_output(result["output"])
+                    print(f"✓ Validation passed: {validation_result}")
 
-        # Test validation
-        print("\nTesting validation...")
-        validation_result = system.validate_output(result["output"])
-        print(f"✓ Validation passed: {validation_result}")
+                    # Test feedback loop
+                    print("\nTesting feedback loop...")
+                    feedback_result = system.process_feedback(
+                        user_query=test_query,
+                        model_output=result["output"],
+                        feedback_type="auto_validation",
+                        feedback_details="Test feedback",
+                    )
+                    print(f"✓ Feedback processed: {feedback_result}")
 
-        # Test feedback loop
-        print("\nTesting feedback loop...")
-        feedback_result = system.process_feedback(
-            user_query=test_query,
-            model_output=result["output"],
-            feedback_type="auto_validation",
-            feedback_details="Test feedback",
-        )
-        print(f"✓ Feedback processed: {feedback_result}")
-
-        # Test version history
-        print("\nTesting version history...")
-        versions = system.get_version_history()
-        print(f"✓ Got {len(versions)} versions")
+                    # Test version history
+                    print("\nTesting version history...")
+                    versions = system.get_version_history()
+                    print(f"✓ Got {len(versions)} versions")
 
         return True
 
@@ -69,35 +81,45 @@ def test_optimization_cycle():
     print("\n\nTesting optimization cycle...")
 
     try:
+        from tests.mocks.models import MockModel, MockCriticModel, MockJudgeModel
         from src import SelfOptimizingSystem
+        
+        # Patch the model initialization to use mocks
+        with patch('src.core.main_model.MainModel._initialize_model') as mock_main:
+            with patch('src.core.critic_model.CriticModel._initialize_model') as mock_critic:
+                with patch('src.core.judge_model.JudgeModel._initialize_model') as mock_judge:
+                    # Set up mock models
+                    mock_main.return_value = MockModel("test-model", 0.7)
+                    mock_critic.return_value = MockCriticModel("test-critic", 0.3)
+                    mock_judge.return_value = MockJudgeModel("test-judge", 0.3)
+                    
+                    # Create system
+                    system = SelfOptimizingSystem()
+                    print("✓ System created for optimization test")
 
-        # Create system
-        system = SelfOptimizingSystem()
-        print("✓ System created for optimization test")
+                    # Simulate a failure
+                    print("\nSimulating a failure...")
+                    failure_result = system.process_failure(
+                        trigger_type="auto_validation",
+                        failure_description="Output was not in JSON format",
+                        user_query="Give me data in JSON format",
+                        last_model_output="Here is your data: 2+2=4",
+                        validation_results=[(False, "Output must be valid JSON")],
+                    )
+                    print(f"✓ Failure processed: {failure_result}")
 
-        # Simulate a failure
-        print("\nSimulating a failure...")
-        failure_result = system.process_failure(
-            trigger_type="auto_validation",
-            failure_description="Output was not in JSON format",
-            user_query="Give me data in JSON format",
-            last_model_output="Here is your data: 2+2=4",
-            validation_results=[(False, "Output must be valid JSON")],
-        )
-        print(f"✓ Failure processed: {failure_result}")
-
-        # Check if optimization was triggered
-        print("\nChecking if optimization was triggered...")
-        versions = system.get_version_history()
-        if len(versions) > 1:
-            print(f"✓ Optimization triggered! {len(versions)} versions found")
-            latest_version = versions[-1]
-            print(f"  Latest version: {latest_version.version_id}")
-            print(f"  Change summary: {latest_version.change_summary}")
-        else:
-            print(
-                "⚠ No optimization triggered (mock models may not trigger optimization)"
-            )
+                    # Check if optimization was triggered
+                    print("\nChecking if optimization was triggered...")
+                    versions = system.get_version_history()
+                    if len(versions) > 1:
+                        print(f"✓ Optimization triggered! {len(versions)} versions found")
+                        latest_version = versions[-1]
+                        print(f"  Latest version: {latest_version.version_id}")
+                        print(f"  Change summary: {latest_version.change_summary}")
+                    else:
+                        print(
+                            "⚠ No optimization triggered (mock models may not trigger optimization)"
+                        )
 
         return True
 

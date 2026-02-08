@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from ..models.config import SystemConfig, OptimizationAttempt, FailureEntry
 from ..models.critic_response import CriticResponse
 from ..models.version import VersionMetadata
+from ..models.exceptions import ConfigurationError
 from .instruction_manager import InstructionManager
 from .judge_model import JudgeModel
 from ..utils.embeddings import EmbeddingsManager
@@ -81,11 +82,12 @@ class CriticModel:
         elif provider == "openrouter":
             return self._init_openrouter()
         else:
-            # Fallback to mock model for testing
-            print(f"Warning: Using mock model for {self.config.critic_model}")
-            print("Set appropriate API key environment variable for real LLM")
-            return MockCriticModel(
-                self.config.critic_model, self.config.temperature_critic
+            # Raise error instead of falling back to mock
+            raise ConfigurationError(
+                f"No API key configured for critic model '{self.config.critic_model}'. "
+                "Set ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY, "
+                "DEEPSEEK_API_KEY, or OPENROUTER_API_KEY. "
+                "For testing without API keys, use the mock fixtures from tests/mocks/"
             )
 
     def _detect_provider(self, model_name: str) -> str:
@@ -107,18 +109,15 @@ class CriticModel:
         try:
             from langchain_anthropic import ChatAnthropic
         except ImportError:
-            print(
-                "Warning: langchain-anthropic not installed. Install with: pip install langchain-anthropic"
-            )
-            return MockCriticModel(
-                self.config.critic_model, self.config.temperature_critic
+            raise ConfigurationError(
+                "langchain-anthropic not installed. Install with: pip install langchain-anthropic"
             )
 
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
-            print("Warning: ANTHROPIC_API_KEY not found. Using mock model.")
-            return MockCriticModel(
-                self.config.critic_model, self.config.temperature_critic
+            raise ConfigurationError(
+                "ANTHROPIC_API_KEY not found. Set it in your environment or .env file. "
+                "For testing without API keys, use the mock fixtures from tests/mocks/"
             )
 
         return ChatAnthropic(
@@ -132,18 +131,15 @@ class CriticModel:
         try:
             from langchain_openai import ChatOpenAI
         except ImportError:
-            print(
-                "Warning: langchain-openai not installed. Install with: pip install langchain-openai"
-            )
-            return MockCriticModel(
-                self.config.critic_model, self.config.temperature_critic
+            raise ConfigurationError(
+                "langchain-openai not installed. Install with: pip install langchain-openai"
             )
 
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            print("Warning: OPENAI_API_KEY not found. Using mock model.")
-            return MockCriticModel(
-                self.config.critic_model, self.config.temperature_critic
+            raise ConfigurationError(
+                "OPENAI_API_KEY not found. Set it in your environment or .env file. "
+                "For testing without API keys, use the mock fixtures from tests/mocks/"
             )
 
         return ChatOpenAI(
@@ -157,18 +153,15 @@ class CriticModel:
         try:
             from langchain_google_genai import ChatGoogleGenerativeAI
         except ImportError:
-            print(
-                "Warning: langchain-google-genai not installed. Install with: pip install langchain-google-genai"
-            )
-            return MockCriticModel(
-                self.config.critic_model, self.config.temperature_critic
+            raise ConfigurationError(
+                "langchain-google-genai not installed. Install with: pip install langchain-google-genai"
             )
 
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
-            print("Warning: GOOGLE_API_KEY not found. Using mock model.")
-            return MockCriticModel(
-                self.config.critic_model, self.config.temperature_critic
+            raise ConfigurationError(
+                "GOOGLE_API_KEY not found. Set it in your environment or .env file. "
+                "For testing without API keys, use the mock fixtures from tests/mocks/"
             )
 
         return ChatGoogleGenerativeAI(
@@ -182,20 +175,17 @@ class CriticModel:
         try:
             from langchain_openai import ChatOpenAI
         except ImportError:
-            print(
-                "Warning: langchain-openai not installed. Install with: pip install langchain-openai"
-            )
-            return MockCriticModel(
-                self.config.critic_model, self.config.temperature_critic
+            raise ConfigurationError(
+                "langchain-openai not installed. Install with: pip install langchain-openai"
             )
 
         api_key = os.getenv("DEEPSEEK_API_KEY")
         base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
 
         if not api_key:
-            print("Warning: DEEPSEEK_API_KEY not found. Using mock model.")
-            return MockCriticModel(
-                self.config.critic_model, self.config.temperature_critic
+            raise ConfigurationError(
+                "DEEPSEEK_API_KEY not found. Set it in your environment or .env file. "
+                "For testing without API keys, use the mock fixtures from tests/mocks/"
             )
 
         return ChatOpenAI(
@@ -210,19 +200,16 @@ class CriticModel:
         try:
             from langchain_openai import ChatOpenAI
         except ImportError:
-            print(
-                "Warning: langchain-openai not installed. Install with: pip install langchain-openai"
-            )
-            return MockCriticModel(
-                self.config.critic_model, self.config.temperature_critic
+            raise ConfigurationError(
+                "langchain-openai not installed. Install with: pip install langchain-openai"
             )
 
         api_key = os.getenv("OPENROUTER_API_KEY")
 
         if not api_key:
-            print("Warning: OPENROUTER_API_KEY not found. Using mock model.")
-            return MockCriticModel(
-                self.config.critic_model, self.config.temperature_critic
+            raise ConfigurationError(
+                "OPENROUTER_API_KEY not found. Set it in your environment or .env file. "
+                "For testing without API keys, use the mock fixtures from tests/mocks/"
             )
 
         return ChatOpenAI(
@@ -790,32 +777,3 @@ Consider:
                     "requires_human_review": False,
                 }
             )
-
-
-class MockCriticModel:
-    """Mock critic model for testing"""
-
-    def __init__(self, model_name: str, temperature: float):
-        self.model_name = model_name
-        self.temperature = temperature
-
-    def invoke(self, messages: List) -> Any:
-        """Mock invoke for LangChain compatibility"""
-
-        class MockResponse:
-            content = json.dumps(
-                {
-                    "impact_analysis": "Mock critic analysis for testing purposes.",
-                    "affected_rules": [],
-                    "conflict_analysis": "No conflicts with existing rules.",
-                    "safety_declaration": True,
-                    "safety_reasoning": "This is a mock response for testing.",
-                    "change_type": "append",
-                    "proposed_appendix_update": "**Mock Rule**: This is a test rule added by the mock critic model.",
-                    "rules_to_deprecate": [],
-                    "confidence_score": 0.8,
-                    "requires_human_review": False,
-                }
-            )
-
-        return MockResponse()

@@ -10,7 +10,8 @@ if str(current_dir) not in sys.path:
 try:
     from src.models.config import SystemConfig
     from src.core.instruction_manager import InstructionManager
-    from src.core.main_model import MainModel, MockModel
+    from src.core.main_model import MainModel
+    from tests.mocks.models import MockModel
 except ImportError as e:
     print(f"Import Error: {e}")
     # Try adding src to path explicitly
@@ -20,7 +21,8 @@ except ImportError as e:
     try:
         from src.models.config import SystemConfig
         from src.core.instruction_manager import InstructionManager
-        from src.core.main_model import MainModel, MockModel
+        from src.core.main_model import MainModel
+        from tests.mocks.models import MockModel
     except ImportError as second_e:
         print(f"Second Import Error: {second_e}")
         sys.exit(1)
