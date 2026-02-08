@@ -17,8 +17,9 @@ def test_provider_imports():
 
     try:
         from models.config import SystemConfig
-        from core.main_model import MainModel, MockModel
-        from core.critic_model import CriticModel, MockCriticModel
+        from core.main_model import MainModel
+        from core.critic_model import CriticModel
+        from tests.mocks.models import MockModel, MockCriticModel
 
         print("✓ All classes imported successfully")
         return True
