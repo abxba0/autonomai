@@ -25,6 +25,7 @@ from .tenant import (
     TenantConfig,
     UsageRecord,
 )
+from .exceptions import ConfigurationError
 
 __all__ = [
     "SystemConfig",
@@ -45,4 +46,5 @@ __all__ = [
     "TenantPlanLimits",
     "TenantConfig",
     "UsageRecord",
+    "ConfigurationError",
 ]

@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 
 from ..models.config import SystemConfig
 from ..models.critic_response import CriticResponse
+from ..models.exceptions import ConfigurationError
 
 
 class JudgeResponse:
@@ -107,10 +108,12 @@ class JudgeModel:
         elif provider == "openrouter":
             return self._init_openrouter()
         else:
-            # Fallback to mock model for testing
-            print(f"Warning: Using mock judge model for {self.config.critic_model}")
-            return MockJudgeModel(
-                self.config.critic_model, self.config.temperature_critic
+            # Raise error instead of falling back to mock
+            raise ConfigurationError(
+                f"No API key configured for judge model '{self.config.critic_model}'. "
+                "Set ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY, "
+                "DEEPSEEK_API_KEY, or OPENROUTER_API_KEY. "
+                "For testing without API keys, use the mock fixtures from tests/mocks/"
             )
 
     def _detect_provider(self, model_name: str) -> str:
@@ -132,14 +135,15 @@ class JudgeModel:
         try:
             from langchain_anthropic import ChatAnthropic
         except ImportError:
-            return MockJudgeModel(
-                self.config.critic_model, self.config.temperature_critic
+            raise ConfigurationError(
+                "langchain-anthropic not installed. Install with: pip install langchain-anthropic"
             )
 
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
-            return MockJudgeModel(
-                self.config.critic_model, self.config.temperature_critic
+            raise ConfigurationError(
+                "ANTHROPIC_API_KEY not found. Set it in your environment or .env file. "
+                "For testing without API keys, use the mock fixtures from tests/mocks/"
             )
 
         return ChatAnthropic(
@@ -153,14 +157,15 @@ class JudgeModel:
         try:
             from langchain_openai import ChatOpenAI
         except ImportError:
-            return MockJudgeModel(
-                self.config.critic_model, self.config.temperature_critic
+            raise ConfigurationError(
+                "langchain-openai not installed. Install with: pip install langchain-openai"
             )
 
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            return MockJudgeModel(
-                self.config.critic_model, self.config.temperature_critic
+            raise ConfigurationError(
+                "OPENAI_API_KEY not found. Set it in your environment or .env file. "
+                "For testing without API keys, use the mock fixtures from tests/mocks/"
             )
 
         return ChatOpenAI(
@@ -174,14 +179,15 @@ class JudgeModel:
         try:
             from langchain_google_genai import ChatGoogleGenerativeAI
         except ImportError:
-            return MockJudgeModel(
-                self.config.critic_model, self.config.temperature_critic
+            raise ConfigurationError(
+                "langchain-google-genai not installed. Install with: pip install langchain-google-genai"
             )
 
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
-            return MockJudgeModel(
-                self.config.critic_model, self.config.temperature_critic
+            raise ConfigurationError(
+                "GOOGLE_API_KEY not found. Set it in your environment or .env file. "
+                "For testing without API keys, use the mock fixtures from tests/mocks/"
             )
 
         return ChatGoogleGenerativeAI(
@@ -195,16 +201,17 @@ class JudgeModel:
         try:
             from langchain_openai import ChatOpenAI
         except ImportError:
-            return MockJudgeModel(
-                self.config.critic_model, self.config.temperature_critic
+            raise ConfigurationError(
+                "langchain-openai not installed. Install with: pip install langchain-openai"
             )
 
         api_key = os.getenv("DEEPSEEK_API_KEY")
         base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
 
         if not api_key:
-            return MockJudgeModel(
-                self.config.critic_model, self.config.temperature_critic
+            raise ConfigurationError(
+                "DEEPSEEK_API_KEY not found. Set it in your environment or .env file. "
+                "For testing without API keys, use the mock fixtures from tests/mocks/"
             )
 
         return ChatOpenAI(
@@ -219,16 +226,16 @@ class JudgeModel:
         try:
             from langchain_openai import ChatOpenAI
         except ImportError:
-            return MockJudgeModel(
-                self.config.critic_model, self.config.temperature_critic
+            raise ConfigurationError(
+                "langchain-openai not installed. Install with: pip install langchain-openai"
             )
 
         api_key = os.getenv("OPENROUTER_API_KEY")
 
         if not api_key:
-            print("Warning: OPENROUTER_API_KEY not found. Using mock judge model.")
-            return MockJudgeModel(
-                self.config.critic_model, self.config.temperature_critic
+            raise ConfigurationError(
+                "OPENROUTER_API_KEY not found. Set it in your environment or .env file. "
+                "For testing without API keys, use the mock fixtures from tests/mocks/"
             )
 
         return ChatOpenAI(
@@ -426,37 +433,3 @@ Provide your verdict as a JSON object.
                 reasoning="Could not parse Judge response. Defaulting to approval.",
                 confidence_score=0.3,
             )
-
-    def _mock_approve(self) -> JudgeResponse:
-        """Mock approval response for testing"""
-        return JudgeResponse(
-            approved=True,
-            reasoning="Mock judge approval for testing purposes.",
-            conflicts_detected=False,
-            confidence_score=0.8,
-        )
-
-
-class MockJudgeModel:
-    """Mock judge model for testing"""
-
-    def __init__(self, model_name: str, temperature: float):
-        self.model_name = model_name
-        self.temperature = temperature
-
-    def invoke(self, messages):
-        """Mock invoke for LangChain compatibility"""
-
-        class MockResponse:
-            content = json.dumps(
-                {
-                    "approved": True,
-                    "reasoning": "Mock judge approval. This proposed change looks reasonable and doesn't appear to contradict the base instructions.",
-                    "conflicts_detected": False,
-                    "conflict_details": None,
-                    "confidence_score": 0.85,
-                    "suggestions": None,
-                }
-            )
-
-        return MockResponse()

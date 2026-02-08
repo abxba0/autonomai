@@ -9,6 +9,7 @@ import logging
 # from langchain_core.messages import HumanMessage, SystemMessage
 
 from ..models.config import SystemConfig, FailureEntry
+from ..models.exceptions import ConfigurationError
 from .instruction_manager import InstructionManager
 from .validator import ValidationPipeline
 from .correction_detector import CorrectionDetector
@@ -122,10 +123,13 @@ class MainModel:
         elif provider == "openrouter":
             return self._init_openrouter()
         else:
-            # Fallback to mock model for testing
-            print(f"Warning: Using mock model for {self.config.main_model}")
-            print("Set appropriate API key environment variable for real LLM")
-            return MockModel(self.config.main_model, self.config.temperature_main)
+            # Raise error instead of falling back to mock
+            raise ConfigurationError(
+                f"No API key configured for model '{self.config.main_model}'. "
+                "Set ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY, "
+                "DEEPSEEK_API_KEY, or OPENROUTER_API_KEY. "
+                "For testing without API keys, use the mock fixtures from tests/mocks/"
+            )
 
     def _detect_provider(self, model_name: str) -> str:
         """Auto-detect provider from model name"""
@@ -146,15 +150,16 @@ class MainModel:
         try:
             from langchain_anthropic import ChatAnthropic
         except ImportError:
-            print(
-                "Warning: langchain-anthropic not installed. Install with: pip install langchain-anthropic"
+            raise ConfigurationError(
+                "langchain-anthropic not installed. Install with: pip install langchain-anthropic"
             )
-            return MockModel(self.config.main_model, self.config.temperature_main)
 
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
-            print("Warning: ANTHROPIC_API_KEY not found. Using mock model.")
-            return MockModel(self.config.main_model, self.config.temperature_main)
+            raise ConfigurationError(
+                "ANTHROPIC_API_KEY not found. Set it in your environment or .env file. "
+                "For testing without API keys, use the mock fixtures from tests/mocks/"
+            )
 
         return ChatAnthropic(
             model=self.config.main_model,
@@ -167,15 +172,16 @@ class MainModel:
         try:
             from langchain_openai import ChatOpenAI
         except ImportError:
-            print(
-                "Warning: langchain-openai not installed. Install with: pip install langchain-openai"
+            raise ConfigurationError(
+                "langchain-openai not installed. Install with: pip install langchain-openai"
             )
-            return MockModel(self.config.main_model, self.config.temperature_main)
 
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            print("Warning: OPENAI_API_KEY not found. Using mock model.")
-            return MockModel(self.config.main_model, self.config.temperature_main)
+            raise ConfigurationError(
+                "OPENAI_API_KEY not found. Set it in your environment or .env file. "
+                "For testing without API keys, use the mock fixtures from tests/mocks/"
+            )
 
         return ChatOpenAI(
             model=self.config.main_model,
@@ -188,15 +194,16 @@ class MainModel:
         try:
             from langchain_google_genai import ChatGoogleGenerativeAI
         except ImportError:
-            print(
-                "Warning: langchain-google-genai not installed. Install with: pip install langchain-google-genai"
+            raise ConfigurationError(
+                "langchain-google-genai not installed. Install with: pip install langchain-google-genai"
             )
-            return MockModel(self.config.main_model, self.config.temperature_main)
 
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
-            print("Warning: GOOGLE_API_KEY not found. Using mock model.")
-            return MockModel(self.config.main_model, self.config.temperature_main)
+            raise ConfigurationError(
+                "GOOGLE_API_KEY not found. Set it in your environment or .env file. "
+                "For testing without API keys, use the mock fixtures from tests/mocks/"
+            )
 
         return ChatGoogleGenerativeAI(
             model=self.config.main_model,
@@ -209,17 +216,18 @@ class MainModel:
         try:
             from langchain_openai import ChatOpenAI
         except ImportError:
-            print(
-                "Warning: langchain-openai not installed. Install with: pip install langchain-openai"
+            raise ConfigurationError(
+                "langchain-openai not installed. Install with: pip install langchain-openai"
             )
-            return MockModel(self.config.main_model, self.config.temperature_main)
 
         api_key = os.getenv("DEEPSEEK_API_KEY")
         base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
 
         if not api_key:
-            print("Warning: DEEPSEEK_API_KEY not found. Using mock model.")
-            return MockModel(self.config.main_model, self.config.temperature_main)
+            raise ConfigurationError(
+                "DEEPSEEK_API_KEY not found. Set it in your environment or .env file. "
+                "For testing without API keys, use the mock fixtures from tests/mocks/"
+            )
 
         return ChatOpenAI(
             model=self.config.main_model,
@@ -233,16 +241,17 @@ class MainModel:
         try:
             from langchain_openai import ChatOpenAI
         except ImportError:
-            print(
-                "Warning: langchain-openai not installed. Install with: pip install langchain-openai"
+            raise ConfigurationError(
+                "langchain-openai not installed. Install with: pip install langchain-openai"
             )
-            return MockModel(self.config.main_model, self.config.temperature_main)
 
         api_key = os.getenv("OPENROUTER_API_KEY")
 
         if not api_key:
-            print("Warning: OPENROUTER_API_KEY not found. Using mock model.")
-            return MockModel(self.config.main_model, self.config.temperature_main)
+            raise ConfigurationError(
+                "OPENROUTER_API_KEY not found. Set it in your environment or .env file. "
+                "For testing without API keys, use the mock fixtures from tests/mocks/"
+            )
 
         return ChatOpenAI(
             model=self.config.main_model,
@@ -483,110 +492,3 @@ class MainModel:
             last_model_output=output,
             validation_errors=validation_errors,
         )
-
-    def _mock_generate(self, system_instructions: str, user_query: str) -> str:
-        """Mock generation for testing without API calls"""
-        if "json" in user_query.lower():
-            return '{"status": "success", "result": "Mock JSON response"}'
-        elif "error" in user_query.lower():
-            return "This is an error response that should fail validation."
-        else:
-            return f"Mock response to: {user_query[:50]}...\n\nBased on system instructions: {system_instructions[:100]}..."
-
-
-class MockModel:
-    """Mock model for testing without actual API calls"""
-
-    def __init__(self, model_name: str, temperature: float):
-        self.model_name = model_name
-        self.temperature = temperature
-
-    def invoke(self, messages: List) -> Any:
-        """Mock invoke for LangChain compatibility"""
-
-        # Check if JSON is expected in the prompt
-        prompt_text = ""
-        for msg in messages:
-            if hasattr(msg, "content"):
-                prompt_text += msg.content.lower()
-
-        # Determine response content based on prompt analysis
-        # Note: This is a simple heuristic for testing. Real models would use more sophisticated logic.
-        is_json_request = "json" in prompt_text and any(
-            keyword in prompt_text for keyword in ["extract", "return", "output"]
-        )
-
-        # Check if code generation is requested
-        is_code_request = any(
-            keyword in prompt_text
-            for keyword in [
-                "write a python",
-                "create a python",
-                "python function",
-                "def ",
-                "function called",
-            ]
-        )
-
-        if is_code_request:
-            # Return sample Python code based on the request
-            if "add" in prompt_text or "sum" in prompt_text:
-                response_content = """```python
-def add_numbers(a, b):
-    \"\"\"Add two numbers and return the sum.\"\"\"
-    return a + b
-```"""
-            elif "filter" in prompt_text and "even" in prompt_text:
-                response_content = """```python
-def filter_even_numbers(numbers):
-    \"\"\"Filter even numbers from a list.\"\"\"
-    return [num for num in numbers if num % 2 == 0]
-```"""
-            elif "reverse" in prompt_text and "word" in prompt_text:
-                response_content = """```python
-def reverse_words(sentence):
-    \"\"\"Reverse each word in a sentence while maintaining word order.\"\"\"
-    words = sentence.split()
-    reversed_words = [word[::-1] for word in words]
-    return ' '.join(reversed_words)
-```"""
-            elif "hello" in prompt_text or "print" in prompt_text:
-                response_content = """```python
-def hello_world():
-    \"\"\"Print Hello, World!\"\"\"
-    print('Hello, World!')
-```"""
-            else:
-                # Generic function example
-                response_content = """```python
-def example_function():
-    \"\"\"Example function demonstrating proper Python structure.\"\"\"
-    result = "This is a mock function"
-    return result
-```"""
-        elif is_json_request:
-            # Return a sample JSON response for extraction tasks
-            # In production, this would be replaced by actual model inference
-            response_content = """{
-    "invoice_number": "4582-2024",
-    "date": "March 15th, 2024",
-    "customer_name": "John Smith",
-    "customer_email": "j.smith@example.com",
-    "customer_phone": "(555) 123-4567",
-    "item_name": "Widget Pro Model X",
-    "item_price": "$249.99",
-    "quantity": "2",
-    "shipping": "$15.50",
-    "tax": "$43.82",
-    "total_amount": "$559.30",
-    "payment_method": "Credit Card ending in 8742",
-    "tracking_number": "TRK-9384756ABC",
-    "order_status": "SHIPPED"
-}"""
-        else:
-            response_content = "Mock response from test model"
-
-        class MockResponse:
-            content = response_content
-
-        return MockResponse()

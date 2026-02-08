@@ -347,15 +347,3 @@ class TenantAwareDataFilter:
         return [
             i for i in interactions if getattr(i, "tenant_id", "default") == tenant_id
         ]
-
-
-class MockTenantManager(TenantManager):
-    """Mock tenant manager for testing without actual storage"""
-
-    def save(self):
-        """Override save to do nothing in tests"""
-        pass
-
-    def load(self):
-        """Override load to do nothing in tests"""
-        pass

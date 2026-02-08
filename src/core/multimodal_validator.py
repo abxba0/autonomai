@@ -469,27 +469,3 @@ class MultiModalValidator:
             results["warnings"].extend(audio_result.warnings)
 
         return results
-
-
-class MockMultiModalValidator(MultiModalValidator):
-    """Mock validator for testing without actual multi-modal processing"""
-
-    def __init__(self, config=None):
-        super().__init__(config)
-        self.mock_results = {}
-
-    def set_mock_result(self, modality: str, result: Dict[str, Any]):
-        """Set mock result for testing"""
-        self.mock_results[modality] = result
-
-    def validate_vision(self, *args, **kwargs) -> VisionValidationResult:
-        """Return mock vision result"""
-        if "vision" in self.mock_results:
-            return VisionValidationResult(**self.mock_results["vision"])
-        return VisionValidationResult(is_valid=True, confidence=1.0)
-
-    def validate_audio(self, *args, **kwargs) -> AudioValidationResult:
-        """Return mock audio result"""
-        if "audio" in self.mock_results:
-            return AudioValidationResult(**self.mock_results["audio"])
-        return AudioValidationResult(is_valid=True, confidence=1.0)
