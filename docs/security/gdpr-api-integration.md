@@ -299,7 +299,7 @@ GET /gdpr/privacy-policy
 {
   "version": "1.0",
   "effective_date": "2026-01-15",
-  "url": "/docs/PRIVACY_POLICY.md",
+  "url": "/docs/security/privacy-policy.md",
   "last_updated": "2026-01-15"
 }
 ```
@@ -557,11 +557,11 @@ For questions or issues:
 - **Technical Support**: support@example.com
 - **Privacy Questions**: privacy@example.com
 - **Data Protection Officer**: dpo@example.com
-- **Documentation**: See `/docs/uk-gdpr-compliance.md`
+- **Documentation**: See `/docs/security/gdpr-quick-start.md`
 
 ## Further Reading
 
-- [UK GDPR Full Documentation](docs/uk-gdpr-compliance.md)
-- [Privacy Policy](docs/PRIVACY_POLICY.md)
-- [Security Guide](docs/security.md)
+- [UK GDPR Full Documentation](docs/security/gdpr-quick-start.md)
+- [Privacy Policy](privacy-policy.md)
+- [Security Guide](security.md)
 - [Staff Training Guide](docs/training/uk-gdpr-staff-training.md)

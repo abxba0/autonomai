@@ -1,6 +1,6 @@
 # UK GDPR Compliance - Quick Start Guide
 
-> **Consolidated Documentation**: This guide combines essential GDPR compliance information, implementation checklists, and quick start instructions. For detailed API integration, see [`docs/gdpr-api-integration.md`](gdpr-api-integration.md). For privacy policy details, see [`docs/PRIVACY_POLICY.md`](PRIVACY_POLICY.md).
+> **Consolidated Documentation**: This guide combines essential GDPR compliance information, implementation checklists, and quick start instructions. For detailed API integration, see [gdpr-api-integration.md](gdpr-api-integration.md). For privacy policy details, see [privacy-policy.md](privacy-policy.md).
 
 ---
 
@@ -185,8 +185,8 @@ python examples/gdpr_compliant_api.py
 
 - **Full API Docs:** [`docs/gdpr-api-integration.md`](gdpr-api-integration.md)
 - **Compliance Guide:** [`docs/uk-gdpr-compliance.md`](uk-gdpr-compliance.md)
-- **Privacy Policy:** [`docs/PRIVACY_POLICY.md`](PRIVACY_POLICY.md)
-- **Implementation Checklist:** [`docs/uk-gdpr-compliance-checklist.md`](uk-gdpr-compliance-checklist.md)
+- **Privacy Policy:** [privacy-policy.md](privacy-policy.md)
+- **Implementation Checklist:** 
 
 ---
 
@@ -196,7 +196,7 @@ python examples/gdpr_compliant_api.py
 
 #### 1. Pre-Flight
 
-- [ ] Review [`docs/uk-gdpr-compliance-checklist.md`](uk-gdpr-compliance-checklist.md)
+- [ ] Review 
 - [ ] Update organization details in all docs
 - [ ] Generate strong SECRET_KEY
 - [ ] Configure database (PostgreSQL recommended for production)
@@ -393,7 +393,7 @@ All staff with access to personal data must complete:
 
 **Schedule**: Initial training before data access, annual refreshers, ad-hoc updates when regulations change
 
-Training materials located in `/docs/training/uk-gdpr-staff-training.md`
+Training materials located in `staff-training.md`
 
 ### Compliance Contacts
 
@@ -421,8 +421,8 @@ Training materials located in `/docs/training/uk-gdpr-staff-training.md`
 - [ ] Update organization information in all GDPR documents
 
 #### 2. Documentation Review
-- [ ] Customize `/docs/PRIVACY_POLICY.md` for your use case
-- [ ] Review `/docs/uk-gdpr-compliance.md` thoroughly
+- [ ] Customize `privacy-policy.md` for your use case
+- [ ] Review `gdpr-quick-start.md` thoroughly
 - [ ] Create Records of Processing Activities (ROPA)
 - [ ] Document all data flows and processing purposes
 
@@ -481,7 +481,7 @@ Test each user right endpoint:
 - [ ] Set up security monitoring and alerts
 
 #### 10. Staff Training
-- [ ] Schedule training sessions using `/docs/training/uk-gdpr-staff-training.md`
+- [ ] Schedule training sessions using `staff-training.md`
 - [ ] Train all staff with data access
 - [ ] Conduct role-specific training (developers, administrators, support, management)
 - [ ] Document training completion

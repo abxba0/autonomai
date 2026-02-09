@@ -23,7 +23,7 @@ This system implements a self-optimizing AI assistant that:
 - **Multi-Worker Task Queue**: Celery-based distributed job processing
 - **Auto-Scaling**: Kubernetes HPA for dynamic resource allocation
 - **High Availability**: Fault-tolerant with automatic failover
-- See [docs/distributed-deployment.md](docs/distributed-deployment.md) for details
+- See [docs/guides/distributed-deployment.md](docs/guides/distributed-deployment.md) for details
 
 ### 🚀 Production Caching & Performance Layer
 - **LLM Response Caching**: 1000x+ speedup for repeated queries
@@ -32,7 +32,7 @@ This system implements a self-optimizing AI assistant that:
 - **Multiple Strategies**: TTL, LRU, LFU, manual invalidation
 - **Automatic Fallback**: In-memory cache if Redis unavailable
 - **Performance Metrics**: Monitor hit rates and latency
-- See [docs/caching-guide.md](docs/caching-guide.md) for details
+- See [docs/guides/caching-guide.md](docs/guides/caching-guide.md) for details
 
 ### 🔄 Automatic Optimization
 - Learns from validation failures
@@ -269,7 +269,7 @@ for step_result in result['results']:
 
 See `examples/autonomous_researcher.py` for a complete workflow demo.
 See `examples/enhanced_workflow_demo.py` for advanced workflow features (conditionals, loops, sub-workflows).
-See `docs/architecture.md` for comprehensive documentation of workflow orchestration features.
+See `docs/guides/architecture.md` for comprehensive documentation of workflow orchestration features.
 
 ## Features
 
@@ -441,7 +441,7 @@ config = SystemConfig(
 system = SelfOptimizingSystem(config)
 ```
 
-For detailed provider configuration, see [Provider Configuration Guide](docs/provider-configuration.md).
+For detailed provider configuration, see [Provider Configuration Guide](docs/guides/provider-configuration.md).
 
 ### Example Usage
 
@@ -542,7 +542,7 @@ See `examples/plugins/` for complete implementations.
 
 ### Documentation
 
-- [Plugin System Guide](docs/plugin-system.md) - Complete architecture and API reference
+- [Plugin System Guide](docs/guides/plugin-system.md) - Complete architecture and API reference
 - [Plugin Quick Start](examples/plugins/README.md) - Quick reference for developers
 - [Plugin Demo](examples/plugin_system_demo.py) - Working demonstration
 
@@ -623,9 +623,9 @@ The system is fully compliant with UK data protection regulations:
 - Privacy by design and by default
 
 **Documentation:**
-- [UK GDPR Compliance Guide](docs/GDPR_QUICK_START.md)
-- [Privacy Policy](docs/PRIVACY_POLICY.md)
-- [Security Guide](docs/security.md)
+- [UK GDPR Compliance Guide](docs/security/gdpr-quick-start.md)
+- [Privacy Policy](docs/security/privacy-policy.md)
+- [Security Guide](docs/security/security.md)
 
 **Third-Party Data Processors:**
 - Anthropic Claude, OpenAI, Google Gemini, Deepseek, Openrouter
@@ -708,7 +708,7 @@ Run the tenant management API:
 python web/api_tenant_management.py
 ```
 
-See [Multi-Tenant Documentation](docs/MULTI_TENANT.md) for complete details.
+See [Multi-Tenant Documentation](docs/guides/multi-tenant.md) for complete details.
 
 ## Distributed Deployment ✨ NEW
 
@@ -783,7 +783,7 @@ config = SystemConfig(
 )
 ```
 
-See [docs/distributed-deployment.md](docs/distributed-deployment.md) for comprehensive deployment guide.
+See [docs/guides/distributed-deployment.md](docs/guides/distributed-deployment.md) for comprehensive deployment guide.
 
 ## Future Enhancements
 
@@ -853,7 +853,7 @@ curl -X POST http://localhost:8001/batch/submit \
   -d '{"job_type": "failure_optimization", "tasks": [...]}'
 ```
 
-See [docs/batch-processing.md](docs/batch-processing.md) for complete documentation.
+See [docs/guides/batch-processing.md](docs/guides/batch-processing.md) for complete documentation.
 
 ## Regression Testing Suite ✨ NEW
 

@@ -270,8 +270,8 @@ pip install -r requirements.txt
 ### Autonomai Documentation
 
 - [Main README](../../README.md) - Overview of the autonomai system
-- [Usage Guide](../../docs/usage-guide.md) - Comprehensive usage instructions
-- [API Reference](../../docs/api-reference.md) - Detailed API documentation
+- [Usage Guide](../../docs/getting-started/usage-guide.md) - Comprehensive usage instructions
+- [API Reference](../../docs/guides/api-reference.md) - Detailed API documentation
 - [Provider Configuration](../../docs/provider-configuration.md) - Multi-provider setup
 
 ### Related Examples

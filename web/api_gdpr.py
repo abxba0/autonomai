@@ -480,7 +480,7 @@ async def get_privacy_policy():
     return {
         "version": PRIVACY_POLICY_VERSION,
         "effective_date": PRIVACY_POLICY_DATE,
-        "url": "/docs/PRIVACY_POLICY.md",
+        "url": "/docs/security/privacy-policy.md",
         "last_updated": PRIVACY_POLICY_DATE,
     }
 
@@ -532,7 +532,7 @@ async def get_compliance_info():
             "address": "Wycliffe House, Water Lane, Wilmslow, Cheshire SK9 5AF",
         },
         "documentation": {
-            "privacy_policy": "/docs/PRIVACY_POLICY.md",
-            "compliance_guide": "/docs/uk-gdpr-compliance.md",
+            "privacy_policy": "/docs/security/privacy-policy.md",
+            "compliance_guide": "/docs/security/gdpr-quick-start.md",
         },
     }

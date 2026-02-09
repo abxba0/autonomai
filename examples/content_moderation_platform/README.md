@@ -458,9 +458,9 @@ This example is part of AutonomAI and follows the same MIT license.
 ## 🔗 Links
 
 - [AutonomAI Documentation](../../docs/README.md)
-- [Multi-Tenant Guide](../../docs/MULTI_TENANT.md)
+- [Multi-Tenant Guide](../../docs/guides/multi-tenant.md)
 - [Plugin Development](../../docs/plugin-system.md)
-- [Workflow Orchestration](../../docs/architecture.md)
+- [Workflow Orchestration](../../docs/guides/architecture.md)
 
 ## 💡 Use Cases
 
@@ -479,7 +479,7 @@ This platform can be adapted for:
 
 For issues or questions:
 1. Check the [troubleshooting guide](#troubleshooting)
-2. Review [common issues](../../docs/troubleshooting.md)
+2. Review [common issues](../../docs/getting-started/troubleshooting.md)
 3. Open an [issue](https://github.com/abxba0/autonomai/issues)
 
 ---

@@ -216,7 +216,7 @@ def main():
     
     print("\nNext Steps:")
     print("- Run tenant management API: python web/api_tenant_management.py")
-    print("- Check documentation: docs/MULTI_TENANT.md")
+    print("- Check documentation: docs/guides/multi-tenant.md")
     print("- Run tests: pytest tests/test_multi_tenant.py -v")
 
 

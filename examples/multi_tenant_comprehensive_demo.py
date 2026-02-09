@@ -457,7 +457,7 @@ SaaS Best Practices:
   - Implement churn prevention monitoring
 
 For more information, see:
-  - docs/MULTI_TENANT.md
+  - docs/guides/multi-tenant.md
   - docs/distributed-deployment.md
   - web/api_tenant_management.py (REST API)
         """)
