@@ -396,7 +396,7 @@ Production Deployment Recommendations:
 
 For more information, see:
   - docs/distributed-deployment.md
-  - docs/MULTI_TENANT.md
+  - docs/guides/multi-tenant.md
         """)
 
     except KeyboardInterrupt:

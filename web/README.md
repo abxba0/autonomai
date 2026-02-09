@@ -415,7 +415,7 @@ For production monitoring, consider integrating:
 
 ## Migration from v1
 
-See `docs/api_v2_migration.md` for complete migration guide.
+See API documentation in [`docs/guides/api-reference.md`](../docs/api-reference.md) for complete details.
 
 **Key Changes:**
 - v1 endpoints deprecated (sunset: 2026-06-01)
@@ -479,5 +479,5 @@ MIT License - See LICENSE file for details
 ## Support
 
 - GitHub Issues: https://github.com/abxba0/autonomai/issues
-- Documentation: `/docs/api_v2_migration.md`
+- Documentation: `/docs/guides/api-reference.md`
 - Examples: `/examples/api_v2_demo.py`

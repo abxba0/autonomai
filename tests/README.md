@@ -316,7 +316,7 @@ pytest tests/test_unit_core_comprehensive.py -x
 
 ## Documentation
 
-Full documentation: [`docs/COMPREHENSIVE_TESTING.md`](../docs/COMPREHENSIVE_TESTING.md)
+Full documentation: See test files in [`tests/`](../tests/) directory
 
 ## Contributing
 

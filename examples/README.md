@@ -232,8 +232,8 @@ if __name__ == "__main__":
 For more information:
 
 - [Main README](../README.md) - Project overview
-- [Usage Guide](../docs/usage-guide.md) - Comprehensive usage instructions
-- [API Reference](../docs/api-reference.md) - API documentation
+- [Usage Guide](../docs/getting-started/usage-guide.md) - Comprehensive usage instructions
+- [API Reference](../docs/guides/api-reference.md) - API documentation
 - [Provider Configuration](../docs/provider-configuration.md) - Provider setup guide
 
 ## Contributing
