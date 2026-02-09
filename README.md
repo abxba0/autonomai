@@ -269,7 +269,7 @@ for step_result in result['results']:
 
 See `examples/autonomous_researcher.py` for a complete workflow demo.
 See `examples/enhanced_workflow_demo.py` for advanced workflow features (conditionals, loops, sub-workflows).
-See `docs/ENHANCED_WORKFLOW_ORCHESTRATION.md` for comprehensive documentation of new features.
+See `docs/architecture.md` for comprehensive documentation of workflow orchestration features.
 
 ## Features
 
@@ -623,7 +623,7 @@ The system is fully compliant with UK data protection regulations:
 - Privacy by design and by default
 
 **Documentation:**
-- [UK GDPR Compliance Guide](docs/uk-gdpr-compliance.md)
+- [UK GDPR Compliance Guide](docs/GDPR_QUICK_START.md)
 - [Privacy Policy](docs/PRIVACY_POLICY.md)
 - [Security Guide](docs/security.md)
 

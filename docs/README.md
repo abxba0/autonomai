@@ -23,7 +23,7 @@ Welcome to the AutonomAI documentation! This guide will help you understand, ins
 ### 🔄 Advanced Features
 | Document | Description |
 |----------|-------------|
-| [Workflow Orchestration](ENHANCED_WORKFLOW_ORCHESTRATION.md) | Planner-Executor-Critic pattern, conditionals, loops |
+| [Architecture](architecture.md) | Workflow orchestration, Planner-Executor-Critic pattern |
 | [Caching Guide](caching-guide.md) | Production-grade caching for performance |
 | [Batch Processing](batch-processing.md) | Celery-based async job processing |
 | [Plugin System](plugin-system.md) | Extensible plugin architecture |
@@ -33,25 +33,21 @@ Welcome to the AutonomAI documentation! This guide will help you understand, ins
 | Document | Description |
 |----------|-------------|
 | [Distributed Deployment](distributed-deployment.md) | Horizontal scaling, load balancing, Kubernetes |
-| [API v2 Migration](api_v2_migration.md) | Migrate from v1 to v2 API |
-| [Comprehensive Testing](COMPREHENSIVE_TESTING.md) | Unit, integration, load, and chaos testing |
 
 ### 🔒 Security & Compliance
 | Document | Description |
 |----------|-------------|
 | [Security Guide](security.md) | Authentication, authorization, rate limiting |
-| [UK GDPR Compliance](uk-gdpr-compliance.md) | Full GDPR compliance guide |
+| [UK GDPR Compliance Guide](GDPR_QUICK_START.md) | Comprehensive GDPR compliance guide with checklists |
 | [GDPR Quick Start](GDPR_QUICK_START.md) | Quick GDPR implementation guide |
 | [GDPR API Integration](gdpr-api-integration.md) | User rights API |
-| [UK GDPR Checklist](uk-gdpr-compliance-checklist.md) | Compliance verification checklist |
+
 | [Privacy Policy](PRIVACY_POLICY.md) | User data handling policies |
 
 ### 🛠️ Development
 | Document | Description |
 |----------|-------------|
 | [Contributing Guide](contributing.md) | Development and contribution guidelines |
-| [Epic Implementation](epic-implementation.md) | Implementation details of major features |
-| [Phases 5-7 Implementation](phases-5-7-implementation.md) | Multi-modal, knowledge graph, multi-tenant |
 | [Troubleshooting](troubleshooting.md) | Common issues and solutions |
 
 ---
@@ -79,7 +75,7 @@ Welcome to the AutonomAI documentation! This guide will help you understand, ins
 
 ### For Enterprise/SaaS
 1. 🏢 Set up [Multi-Tenant Support](MULTI_TENANT.md)
-2. ⚖️ Ensure [GDPR Compliance](uk-gdpr-compliance.md)
+2. ⚖️ Ensure [GDPR Compliance](GDPR_QUICK_START.md)
 3. 🔐 Configure [Security](security.md)
 4. 📈 Monitor with [Batch Processing](batch-processing.md)
 
@@ -141,16 +137,15 @@ AutonomAI is a LangChain-based self-optimizing AI system that learns from failur
 - [Validation Pipeline](usage-guide.md#validation)
 
 ### Workflow Automation
-- [Workflow Orchestration](ENHANCED_WORKFLOW_ORCHESTRATION.md)
-- [Planner-Executor-Critic Pattern](ENHANCED_WORKFLOW_ORCHESTRATION.md#planner-executor-critic-pattern)
-- [Conditional Branching](ENHANCED_WORKFLOW_ORCHESTRATION.md#conditional-branching)
-- [Loop Constructs](ENHANCED_WORKFLOW_ORCHESTRATION.md#loop-constructs)
+- [Workflow Orchestration](architecture.md)
+- [Planner-Executor-Critic Pattern](architecture.md)
+- [Conditional Branching](architecture.md)
+- [Loop Constructs](architecture.md)
 
 ### Performance & Scalability
 - [Caching Strategies](caching-guide.md)
 - [Batch Processing](batch-processing.md)
 - [Distributed Deployment](distributed-deployment.md)
-- [Load Testing](COMPREHENSIVE_TESTING.md#load-stress-tests)
 
 ### Extensibility
 - [Plugin Development](plugin-system.md)
@@ -161,14 +156,14 @@ AutonomAI is a LangChain-based self-optimizing AI system that learns from failur
 ### Security & Compliance
 - [Authentication & Authorization](security.md)
 - [Rate Limiting](security.md#rate-limiting)
-- [GDPR Compliance](uk-gdpr-compliance.md)
+- [GDPR Compliance Guide](GDPR_QUICK_START.md)
 - [Audit Logging](security.md#audit-logging)
 
 ### Testing & Quality
-- [Unit Testing](COMPREHENSIVE_TESTING.md#unit-tests)
-- [Integration Testing](COMPREHENSIVE_TESTING.md#integration-tests)
-- [Load Testing](COMPREHENSIVE_TESTING.md#load-stress-tests)
-- [Chaos Engineering](COMPREHENSIVE_TESTING.md#chaos-engineering-tests)
+- Unit Testing - See `tests/` directory
+- Integration Testing - See `tests/` directory
+- Load Testing - See `tests/test_load_stress_comprehensive.py`
+- Chaos Engineering - See `tests/test_chaos_engineering.py`
 
 ---
 

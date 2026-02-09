@@ -460,7 +460,7 @@ This example is part of AutonomAI and follows the same MIT license.
 - [AutonomAI Documentation](../../docs/README.md)
 - [Multi-Tenant Guide](../../docs/MULTI_TENANT.md)
 - [Plugin Development](../../docs/plugin-system.md)
-- [Workflow Orchestration](../../docs/ENHANCED_WORKFLOW_ORCHESTRATION.md)
+- [Workflow Orchestration](../../docs/architecture.md)
 
 ## 💡 Use Cases
 
